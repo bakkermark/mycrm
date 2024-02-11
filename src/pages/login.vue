@@ -19,7 +19,7 @@ definePage({
 
 // Define the handleLogin method
 const handleLogin = () => {
-  console.log('Er wordt ingelogd met: ', form.value);
+  console.log('Inlogpoging: ', form.value);
 };
 
 const form = ref({
