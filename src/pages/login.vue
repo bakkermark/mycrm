@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { app } from '@/firebase/config'
 import { ref } from 'vue';
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
@@ -10,6 +11,8 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { nextTick } from 'vue';
 
 definePage({
   meta: {
@@ -17,32 +20,46 @@ definePage({
   },
 })
 
-// Define the handleLogin method
-const handleLogin = () => {
-  console.log('Inlogpoging: ', form.value);
+// Get router instance
+const router = useRouter();
+
+const handleLogin = async () => {
+  const auth = getAuth();
+  signInWithEmailAndPassword(auth, form.value.email, form.value.password)
+    .then(async (userCredential) => {
+      const user = userCredential.user;
+      // Redirect to homepage
+      await router.push({ name: 'root' });
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      // you can handle errors here as per your requirements
+      console.log("Error-code: " +  errorCode)
+      console.log("Error-message:" + errorMessage)
+    });
 };
 
+const auth = getAuth(app);
+console.log("Auth:" + auth)
 const form = ref({
   email: '',
   password: '',
   remember: false,
 })
-
 const isPasswordVisible = ref(false)
-
 const authThemeImg = useGenerateImageVariant(
   authV2LoginIllustrationLight,
   authV2LoginIllustrationDark,
   authV2LoginIllustrationBorderedLight,
   authV2LoginIllustrationBorderedDark,
   true)
-
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 </script>
 
 <template>
   <VRow
-    no-gutters
+    no-gutters="true"
     class="auth-wrapper bg-surface"
   >
     <VCol
@@ -71,7 +88,7 @@ const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
       class="auth-card-v2 d-flex align-center justify-center"
     >
       <VCard
-        flat
+        flat="true"
         :max-width="500"
         class="mt-12 mt-sm-0 pa-4"
       >
@@ -126,7 +143,7 @@ const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
                 </div>
 
                 <VBtn
-                  block
+                  block="true"
                   type="submit"
                 >
                   Login
