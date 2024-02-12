@@ -9,7 +9,7 @@ interface Data {
 }
 
 const getData = () => {
-  const firebaseCollectionName = "Contacts"
+  const firebaseCollectionName = "Licenses/DMS3JCcWF4GA9R4zGas4/Contacts"
   const data: Ref<Data[]> = ref([]);
   const error: Ref<string | null> = ref(null);
 

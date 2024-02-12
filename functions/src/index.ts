@@ -7,8 +7,26 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {onRequest} from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
+// import {onRequest} from "firebase-functions/v2/https";
+// import * as logger from "firebase-functions/logger";
+
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+
+admin.initializeApp();
+
+export const getUsers = functions.https.onCall(async (data, context) => {
+  const userList: admin.auth.UserRecord[] = [];
+  await admin.auth().listUsers().then((result) => {
+    result.users.forEach((userRecord) => {
+      userList.push(userRecord.toJSON() as admin.auth.UserRecord);
+    });
+  }).catch((error) => {
+    console.log(error);
+  });
+  return userList;
+});
+
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript

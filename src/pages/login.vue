@@ -12,6 +12,7 @@ import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 
 definePage({
   meta: {
@@ -27,6 +28,28 @@ const handleLogin = async () => {
   signInWithEmailAndPassword(auth, form.value.email, form.value.password)
     .then(async (userCredential) => {
       const user = userCredential.user;
+      if (user !== null && user.email !== null) {
+        // Fetch the user from the Users collection in Firestore by email
+        const firestore = getFirestore();
+        const usersCollection = collection(firestore, "Users");
+        const userEmailQuery = query(usersCollection, where("Email", "==", user.email));
+        const querySnapshot = await getDocs(userEmailQuery);
+
+        if (!querySnapshot.empty) {
+          // Document exists
+          const userDoc = querySnapshot.docs[0];
+          const data = userDoc.data();
+
+          const licenseCode = data.LicenseCode;
+          //You can save licenseCode in application's state persistently.
+
+          console.log("License code: " + licenseCode);
+        } else {
+          console.log("No such document!");
+        }
+
+      }
+
       // Redirect to home
       await router.push({ name: 'root' });
     })
