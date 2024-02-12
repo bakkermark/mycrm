@@ -17,4 +17,4 @@ const app = initializeApp(firebaseConfig);
 const projectFirestore = getFirestore(app);
 const analytics = getAnalytics(app);
 
-export { app, projectFirestore, analytics, FieldValue };
+export { app, projectFirestore, analytics, FieldValue, firebaseConfig };

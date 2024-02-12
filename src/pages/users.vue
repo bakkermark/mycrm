@@ -1,7 +1,7 @@
 <template>
-  <h1>{{ $t('Contacts overview') }}</h1>
+  <h1>{{ $t('users') }}</h1>
   <br/>
-  <div >
+  <div>
     <VTable
       density="compact"
       height="500"
@@ -11,30 +11,36 @@
       <thead>
       <tr>
         <th class="text-uppercase">
-          {{ $t('firstname') }}
+          {{ $t('identifier') }}
         </th>
         <th class="text-uppercase">
-          {{ $t('lastname') }}
+          {{ $t('display name') }}
         </th>
         <th class="text-uppercase">
-          {{ $t('company') }}
+          {{ $t('email') }}
+        </th>
+        <th class="text-uppercase">
+          {{ $t('Disabled?') }}
         </th>
       </tr>
       </thead>
 
       <tbody>
       <tr
-        v-for="item in contacts"
-        :key="item.Code"
+        v-for="item in users"
+        :key="item.uid"
       >
         <td>
-          {{ item.FirstName }}
+          {{ item.uid }}
         </td>
         <td>
-          {{ item.LastName }}
+          {{ item.displayName }}
         </td>
         <td>
-          {{ item.Company }}
+          {{ item.email }}
+        </td>
+        <td>
+          {{ item.disabled }}
         </td>
       </tr>
       </tbody>
@@ -43,16 +49,32 @@
 </template>
 
 <script>
-import getContacts from '../composables/getContacts'
+// Import necessary Firebase modules
+import { getFunctions, httpsCallable } from 'firebase/functions';
+// Import the firebase app from your config
+import { app } from '@/firebase/config'; // Replace with path to your config file
 
 export default {
-  name: 'Contacts',
-  setup() {
-    const { contacts, error, load } = getContacts()
-
-    load()
-
-    return { contacts, error }
+  data: () => ({
+    users: [],
+  }),
+  created() {
+    this.fetchUsers();
   },
-}
+  methods: {
+    async fetchUsers() {
+      // Use the already-initialized app from config file
+      const functions = getFunctions(app);
+      const getUsers = httpsCallable(functions, 'getUsers');
+
+      try {
+        const result = await getUsers();
+        this.users = result.data;
+      } catch (error) {
+        console.error('Error while fetching users:', error);
+      }
+    },
+  },
+};
 </script>
+
