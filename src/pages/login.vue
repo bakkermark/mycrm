@@ -13,6 +13,7 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import { useLicenseStore } from '@/plugins/pinia/licenseStore';
 
 definePage({
   meta: {
@@ -41,13 +42,11 @@ const handleLogin = async () => {
           const data = userDoc.data();
 
           const licenseCode = data.LicenseCode;
-          //You can save licenseCode in application's state persistently.
-
-          console.log("License code: " + licenseCode);
+          const licenseStore = useLicenseStore();
+          licenseStore.setLicenseCode(licenseCode);
         } else {
           console.log("No such document!");
         }
-
       }
 
       // Redirect to home

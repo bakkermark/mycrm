@@ -11,13 +11,16 @@
       <thead>
       <tr>
         <th class="text-uppercase">
+          {{ $t('company') }}
+        </th>
+        <th class="text-uppercase">
           {{ $t('firstname') }}
         </th>
         <th class="text-uppercase">
           {{ $t('lastname') }}
         </th>
         <th class="text-uppercase">
-          {{ $t('company') }}
+          {{ $t('email') }}
         </th>
       </tr>
       </thead>
@@ -28,13 +31,16 @@
         :key="item.Code"
       >
         <td>
+          {{ item.Company }}
+        </td>
+        <td>
           {{ item.FirstName }}
         </td>
         <td>
           {{ item.LastName }}
         </td>
         <td>
-          {{ item.Company }}
+          {{ item.Email }}
         </td>
       </tr>
       </tbody>
