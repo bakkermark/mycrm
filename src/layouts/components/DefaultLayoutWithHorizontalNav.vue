@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import navItems from '@/navigation/horizontal'
-
 import { themeConfig } from '@themeConfig'
 
 // Components
@@ -41,12 +40,10 @@ watch([isFallbackStateActive, refLoadingIndicator], () => {
         </h1>
       </RouterLink>
       <VSpacer />
-
       <NavBarI18n
         v-if="themeConfig.app.i18n.enable && themeConfig.app.i18n.langConfig?.length"
         :languages="themeConfig.app.i18n.langConfig"
       />
-
       <NavbarThemeSwitcher class="me-2" />
       <UserProfile />
     </template>

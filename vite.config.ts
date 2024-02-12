@@ -74,7 +74,6 @@ export default defineConfig({
       // ℹ️ Disabled to avoid confusion & accidental usage
       ignore: ['useCookies', 'useStorage'],
     }),
-
   ],
   define: { 'process.env': {} },
   resolve: {

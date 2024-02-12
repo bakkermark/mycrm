@@ -12,7 +12,6 @@ import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { nextTick } from 'vue';
 
 definePage({
   meta: {
@@ -28,7 +27,7 @@ const handleLogin = async () => {
   signInWithEmailAndPassword(auth, form.value.email, form.value.password)
     .then(async (userCredential) => {
       const user = userCredential.user;
-      // Redirect to homepage
+      // Redirect to home
       await router.push({ name: 'root' });
     })
     .catch((error) => {
