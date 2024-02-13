@@ -1,22 +1,26 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+const db = admin.firestore();
 
 export const getUsers = functions.https.onCall(
-  async (): Promise<admin.auth.UserRecord[]> => {
-    const userList: admin.auth.UserRecord[] = [];
-    await admin
-      .auth()
-      .listUsers()
-      .then((result) => {
-        result.users.forEach((userRecord) => {
-          userList.push(userRecord.toJSON() as admin.auth.UserRecord);
-        });
-      })
-      .catch((error) => {
-        console.log(error);
+  async (): Promise<Record<string, unknown>[]> => {
+    const userList: Record<string, unknown>[] = [];
+    const listUsersResult = await admin.auth().listUsers();
+
+    for (const userRecord of listUsersResult.users) {
+      const userJson = userRecord.toJSON() as admin.auth.UserRecord;
+      const userSnapshot = await db.collection("Users")
+        .where("Email", "==", userJson.email).get();
+
+      userSnapshot.forEach((doc) => {
+        userList.push({...userJson, extra: doc.data()});
       });
+    }
+
     return userList;
   }
 );

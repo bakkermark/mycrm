@@ -5,22 +5,34 @@
     <VTable
       density="compact"
       height="500"
-      fixed-header="true"
+      fixed-header=true
       class="text-no-wrap"
     >
       <thead>
       <tr>
         <th class="text-uppercase">
-          {{ $t('identifier') }}
+          {{ $t('firstname') }}
         </th>
         <th class="text-uppercase">
-          {{ $t('display name') }}
+          {{ $t('infix') }}
+        </th>
+        <th class="text-uppercase">
+          {{ $t('lastname') }}
         </th>
         <th class="text-uppercase">
           {{ $t('email') }}
         </th>
         <th class="text-uppercase">
-          {{ $t('Disabled?') }}
+          {{ $t('role') }}
+        </th>
+        <th class="text-uppercase">
+          {{ $t('created') }}
+        </th>
+        <th class="text-uppercase">
+          {{ $t('licensee') }}
+        </th>
+        <th class="text-uppercase">
+          {{ $t('Active') }}
         </th>
       </tr>
       </thead>
@@ -31,16 +43,28 @@
         :key="item.uid"
       >
         <td>
-          {{ item.uid }}
+          {{ item.extra.FirstName }}
         </td>
         <td>
-          {{ item.displayName }}
+          {{ item.extra.Infix }}
+        </td>
+        <td>
+          {{ item.extra.LastName }}
         </td>
         <td>
           {{ item.email }}
         </td>
         <td>
-          {{ item.disabled }}
+          {{ item.extra.Role }}
+        </td>
+        <td>
+          {{ formatDate(item.extra.Created) }}
+        </td>
+        <td>
+          {{ item.extra.LicenseCode }}
+        </td>
+        <td>
+          {{ item.extra.Active }}
         </td>
       </tr>
       </tbody>
@@ -62,6 +86,23 @@ export default {
     this.fetchUsers();
   },
   methods: {
+    formatDate(timestamp) {
+      if (timestamp) {
+        const date = new Date(timestamp._seconds * 1000);
+
+        // Formatting day and month to always have 2 digits
+        const day = ("0" + date.getDate()).slice(-2);
+        const month = ("0" + (date.getMonth() + 1)).slice(-2);
+        const year = date.getFullYear();
+
+        // Formatting hours and minutes to always have 2 digits
+        const hours = ("0" + date.getHours()).slice(-2);
+        const minutes = ("0" + date.getMinutes()).slice(-2);
+
+        return `${day}-${month}-${year} ${hours}:${minutes}`;
+      }
+      return '';
+    },
     async fetchUsers() {
       // Use the already-initialized app from config file
       const functions = getFunctions(app);
