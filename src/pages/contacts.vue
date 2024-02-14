@@ -5,7 +5,7 @@
     <VTable
       density="compact"
       height="500"
-      fixed-header="true"
+      fixed-header
       class="text-no-wrap"
     >
       <thead>

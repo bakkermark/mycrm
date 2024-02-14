@@ -44,6 +44,7 @@ const handleLogin = async () => {
           const licenseCode = data.LicenseCode;
           const licenseStore = useLicenseStore();
           licenseStore.setLicenseCode(licenseCode);
+          console.log("LicenseCode: " +  licenseCode);
         } else {
           console.log("No such document!");
         }

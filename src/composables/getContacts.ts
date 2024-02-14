@@ -29,7 +29,6 @@ const getData = () => {
       error.value = (err as Error).message;
     }
   };
-
   return { contacts: data, error, load };
 };
 

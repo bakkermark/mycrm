@@ -10,13 +10,19 @@ export default [
     icon: { icon: 'tabler-file' },
   },
   {
-    title: 'Users',
-    to: { name: 'users' },
-    icon: { icon: 'tabler-users' },
+    title: 'Licenses',
+    icon: { icon: 'tabler-file-certificate' },
+    children: [
+      { title: 'Overview', to: 'license-list' },
+      { title: 'Add', to: 'license-add' },
+    ],
   },
   {
-    title: 'Testpage',
-    to: { name: 'testpage' },
-    icon: { icon: 'tabler-file' },
+    title: 'Gebruikers',
+    icon: { icon: 'tabler-users' },
+    children: [
+      { title: 'List', to: 'user-list' },
+      { title: 'Add', to: 'user-add' },
+    ],
   },
 ]

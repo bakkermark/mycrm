@@ -42,9 +42,14 @@ declare module 'vue-router/auto/routes' {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
     'contacts': RouteRecordInfo<'contacts', '/contacts', Record<never, never>, Record<never, never>>,
+    'license-add': RouteRecordInfo<'license-add', '/license/add', Record<never, never>, Record<never, never>>,
+    'license-details-id': RouteRecordInfo<'license-details-id', '/license/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'license-list': RouteRecordInfo<'license-list', '/license/list', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'testpage': RouteRecordInfo<'testpage', '/testpage', Record<never, never>, Record<never, never>>,
-    'users': RouteRecordInfo<'users', '/users', Record<never, never>, Record<never, never>>,
+    'user-add': RouteRecordInfo<'user-add', '/user/add', Record<never, never>, Record<never, never>>,
+    'user-details-id': RouteRecordInfo<'user-details-id', '/user/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'user-list': RouteRecordInfo<'user-list', '/user/list', Record<never, never>, Record<never, never>>,
   }
 }
 
