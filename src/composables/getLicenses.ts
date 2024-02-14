@@ -1,6 +1,6 @@
 import { Ref, ref } from 'vue';
 import { projectFirestore } from '@/firebase/config';
-import { collection, getDocs, query, DocumentSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, DocumentSnapshot } from 'firebase/firestore';
 import firebase from 'firebase/compat/app';
 
 interface Data {
@@ -16,9 +16,8 @@ const getLicenses = () => {
 
   const load = async () => {
     try {
-      console.log("Trying to retrieve data ...")
       const collectionReference = collection(projectFirestore, firebaseCollectionName);
-      const dataQuery = query(collectionReference);
+      const dataQuery = query(collectionReference, orderBy("Company"));
       const dataSnapshots = await getDocs(dataQuery);
 
       licenses.value = dataSnapshots.docs.map((doc: DocumentSnapshot<firebase.firestore.DocumentData>) => {
@@ -28,12 +27,12 @@ const getLicenses = () => {
       });
 
       // Log the count of records in licenses
-      console.log(`Retrieved ${licenses.value.length} records.`);
+      //console.log(`Retrieved ${licenses.value.length} records.`);
 
       // Log the Company field for each record in licenses
-      licenses.value.forEach((record, index) => {
-        console.log(`Record ${index + 1} Company: ${record.Company}`);
-      });
+      //licenses.value.forEach((record, index) => {
+      //  console.log(`Record ${index + 1} Company: ${record.Company}`);
+      //});
 
     } catch (err) {
       error.value = (err as Error).message;

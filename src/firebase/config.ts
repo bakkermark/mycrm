@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { FieldValue } from "@firebase/firestore";
 
 const firebaseConfig = {
@@ -16,5 +17,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const projectFirestore = getFirestore(app);
 const analytics = getAnalytics(app);
+
+const auth = getAuth();
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("State persistence set to 'local'");
+  })
+  .catch((error) => {
+    console.error("Could not set firebase auth state persistence: ", error);
+  });
 
 export { app, projectFirestore, analytics, FieldValue, firebaseConfig };

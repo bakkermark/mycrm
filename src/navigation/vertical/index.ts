@@ -13,7 +13,7 @@ export default [
     title: 'Licenses',
     icon: { icon: 'tabler-file-certificate' },
     children: [
-      { title: 'Overview', to: 'license-list' },
+      { title: 'List', to: 'license-list' },
       { title: 'Add', to: 'license-add' },
     ],
   },
