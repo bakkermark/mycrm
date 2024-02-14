@@ -28,6 +28,9 @@
 <script lang="ts" setup>
 import {ref} from 'vue';
 import {useRouter} from 'vue-router';
+import { addDoc, collection } from 'firebase/firestore'
+import { projectFirestore } from '@/firebase/config';
+import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
 import type {VForm} from 'vuetify/components';
 
 const router = useRouter();
@@ -45,11 +48,19 @@ const handleSubmit = async () => {
     const validationResult = await refForm.value.validate();
     // validationResult.valid will be true if the form is valid, false otherwise
     if (validationResult.valid) {
-      console.log('Form is valid, proceeding with submission:', {
-        firstName: firstName.value,
+      //console.log('Form is valid, proceeding with submission:', {
+      //  firstName: firstName.value,
+      //});
+      const data = {
+        Company: company.value,
+        FirstName: firstName.value,
+        Infix: infix.value,
+        LastName: lastName.value,
+        Email: email.value,
+      }
 
-      });
-      // Proceed with your form submission logic...
+      await addDoc(collection(projectFirestore, 'Licenses'), data)
+      await router.push({ name: 'license-list' })
     } else {
       console.log('Form validation failed, not submitting.');
     }
