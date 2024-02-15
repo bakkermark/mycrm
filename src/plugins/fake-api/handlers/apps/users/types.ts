@@ -1,14 +1,14 @@
 export interface UserProperties {
   id: number
   fullName: string
-  Company: string
+  company: string
   role: string
   username?: string
   country: string
   contact: string
   email: string
-  CurrentPlan: string
-  Active: boolean
+  plan: string
+  status: string
   avatar: string
   billing: string
 }

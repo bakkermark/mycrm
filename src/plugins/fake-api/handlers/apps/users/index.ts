@@ -32,7 +32,7 @@ export const handlerAppsUsers = [
     const pageLocal = is.number(parsedPage) ? parsedPage : 1
 
     // filter users
-    let filteredUsers = db.users.filter(user => ((user.fullName.toLowerCase().includes(queryLower) || user.email.toLowerCase().includes(queryLower)) && user.role === (role || user.role) && user.currentPlan === (plan || user.currentPlan) && user.status === (status || user.status))).reverse()
+    let filteredUsers = db.users.filter(user => ((user.fullName.toLowerCase().includes(queryLower) || user.email.toLowerCase().includes(queryLower)) && user.role === (role || user.role) && user.plan === (plan || user.plan) && user.status === (status || user.status))).reverse()
 
     // sort users
     if (sortByLocal) {
@@ -64,9 +64,9 @@ export const handlerAppsUsers = [
       if (sortByLocal === 'plan') {
         filteredUsers = filteredUsers.sort((a, b) => {
           if (orderByLocal === 'asc')
-            return a.currentPlan.localeCompare(b.currentPlan)
+            return a.plan.localeCompare(b.plan)
           else
-            return b.currentPlan.localeCompare(a.currentPlan)
+            return b.plan.localeCompare(a.plan)
         })
       }
       if (sortByLocal === 'status') {

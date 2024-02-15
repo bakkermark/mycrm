@@ -109,9 +109,11 @@ const email = ref('')
 const selectedLicenseHolder = ref('')
 const roles = ['Admin', 'Standard User']
 const selectedRole = ref('')
+//TODO Should be from licenseholder data instead of fixed.
 const licenseHolders = ["TempPro VOF", "MultiMediaMarkers"]
 const licenseHolderCompany = ref('TempPro VOF')
 const licenseHolderLicenseCode = ref('Q9Hq2HgAUiGd7fM71qGJ')
+const selectedLicenseHoldersPlan = ref('Basic')
 const show1 = ref(false)
 const show2 = ref(true)
 const password = ref('')
@@ -134,14 +136,17 @@ const handleSubmit = async () => {
         // use the uid as the id for the new Firestore document
         const data = {
           id: uid,
-          FirstName: firstName.value,
-          Infix: infix.value,
-          LastName: lastName.value,
-          Email: email.value,
-          LicenseHolderCompany: licenseHolderCompany.value,
-          LicenseHolderLicenseCode: licenseHolderLicenseCode.value,
-          Active: true,
-          CreatedAt: new Date()
+          firstName: firstName.value,
+          infix: infix.value,
+          lastName: lastName.value,
+          fullname: firstName.value + " " +  infix.value + " " + lastName.value,
+          email: email.value,
+          status: "Active",
+          role: selectedRole.value,
+          licenseHolderCompany: licenseHolderCompany.value,
+          licenseHolderLicenseCode: licenseHolderLicenseCode.value,
+          licenseHolderPlan: selectedLicenseHoldersPlan.value,
+          createdAt: new Date()
         }
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
 
