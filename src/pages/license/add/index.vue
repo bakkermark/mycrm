@@ -2,7 +2,7 @@
   <VForm ref="refForm" @submit.prevent="handleSubmit">
     <VRow>
       <VCol cols="12" md="4">
-        <AppTextField v-model="firstName" label="First Name" placeholder="John" :rules="[requiredValidator]"/>
+        <AppTextField v-model="firstName" label="First Name" placeholder="Type in first name ..." :rules="[requiredValidator]"/>
       </VCol>
       <VCol cols="12" md="2">
         <AppTextField v-model="infix" label="Infix" placeholder="Type in infix ... "/>
@@ -12,14 +12,27 @@
                       :rules="[requiredValidator]"/>
       </VCol>
       <VCol cols="12" md="6">
-        <AppTextField v-model="email" label="Email" placeholder="john@email.com" :rules="[requiredValidator]"/>
+        <AppTextField v-model="email" label="Email" placeholder="Type in email address ..." :rules="[requiredValidator]"/>
       </VCol>
       <VCol cols="12" md="6">
         <AppTextField v-model="company" label="Company name" placeholder="Type in company name ..."
                       :rules="[requiredValidator]"/>
       </VCol>
       <VCol cols="12">
-        <VBtn type="submit">Submit</VBtn>
+        <VBtn
+          type="submit"
+          class="me-2"
+        >
+          Save
+        </VBtn>
+
+        <VBtn
+          color="secondary"
+          type="reset"
+          variant="tonal"
+        >
+          Reset
+        </VBtn>
       </VCol>
     </VRow>
   </VForm>
@@ -33,24 +46,21 @@ import { projectFirestore } from '@/firebase/config';
 import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
 import type {VForm} from 'vuetify/components';
 
+const routePushName = 'license-list'
+const firebaseCollectionName = 'Licenses'
+
 const router = useRouter();
 const refForm = ref<VForm | null>(null);
+const firstName = ref('')
+const infix = ref('')
+const lastName = ref('')
+const email = ref('')
+const company = ref('')
 
-const firstName = ref('');
-const infix = ref('');
-const lastName = ref('');
-const email = ref('');
-const company = ref('');
 const handleSubmit = async () => {
-  // Check if refForm.value exists to prevent TypeScript errors
   if (refForm.value) {
-    // Await the Promise resolved by the validate method
     const validationResult = await refForm.value.validate();
-    // validationResult.valid will be true if the form is valid, false otherwise
     if (validationResult.valid) {
-      //console.log('Form is valid, proceeding with submission:', {
-      //  firstName: firstName.value,
-      //});
       const data = {
         Company: company.value,
         FirstName: firstName.value,
@@ -59,10 +69,9 @@ const handleSubmit = async () => {
         Email: email.value,
       }
 
-      await addDoc(collection(projectFirestore, 'Licenses'), data)
-      await router.push({ name: 'license-list' })
+      await addDoc(collection(projectFirestore, firebaseCollectionName), data)
+      await router.push({ name: routePushName })
     } else {
-      console.log('Form validation failed, not submitting.');
     }
   }
 };
