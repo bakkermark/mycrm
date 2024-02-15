@@ -98,63 +98,56 @@ const plans = [
 
 const status = [
   {
-    title: 'Pending',
-    value: 'pending',
-  },
-  {
     title: 'Active',
-    value: 'active',
+    value: 'Active',
   },
   {
     title: 'Inactive',
-    value: 'inactive',
+    value: 'Inactive',
   },
 ]
 
 const resolveUserRoleVariant = role => {
   const roleLowerCase = role.toLowerCase()
-  if (roleLowerCase === 'subscriber')
-    return {
-      color: 'warning',
-      icon: 'tabler-circle-check',
-    }
-  if (roleLowerCase === 'author')
-    return {
-      color: 'success',
-      icon: 'tabler-user',
-    }
-  if (roleLowerCase === 'maintainer')
-    return {
-      color: 'primary',
-      icon: 'tabler-chart-pie-2',
-    }
-  if (roleLowerCase === 'editor')
-    return {
-      color: 'info',
-      icon: 'tabler-edit',
-    }
   if (roleLowerCase === 'admin')
     return {
-      color: 'secondary',
-      icon: 'tabler-device-laptop',
+      color: 'warning',
+      icon: 'tabler-user-star',
     }
-
+  if (roleLowerCase === 'standard user')
+    return {
+      color: 'secondary',
+      icon: 'tabler-user',
+    }
+  
   return {
-    color: 'primary',
+    color: 'secondary',
     icon: 'tabler-user',
   }
 }
 
 const resolveUserStatusVariant = stat => {
   const statLowerCase = stat.toLowerCase()
-  if (statLowerCase === 'pending')
-    return 'warning'
   if (statLowerCase === 'active')
     return 'success'
   if (statLowerCase === 'inactive')
-    return 'secondary'
+    return 'error'
 
   return 'primary'
+}
+
+const resolveActionIconUser = action => {
+  const actionLowerCase = action.toLowerCase()
+  if (actionLowerCase === 'active')
+    return {
+      color: 'error',
+      icon: 'tabler-user-down',
+    }
+  if (actionLowerCase === 'inactive')
+    return {
+      color: 'success',
+      icon: 'tabler-user-up',
+    }
 }
 
 const isAddNewUserDrawerVisible = ref(false)
@@ -427,7 +420,7 @@ const widgetData = ref([
           <VChip
             :color="resolveUserStatusVariant(item.status)"
             size="small"
-            label
+            label=""
             class="text-capitalize"
           >
             {{ item.status }}
@@ -436,6 +429,9 @@ const widgetData = ref([
 
         <!-- Actions -->
         <template #item.actions="{ item }">
+          <IconBtn>
+            <VIcon :icon="resolveActionIconUser(item.status).icon" :color="resolveActionIconUser(item.status).color" />
+          </IconBtn>
           <IconBtn @click="deleteUser(item.id)">
             <VIcon icon="tabler-trash" />
           </IconBtn>

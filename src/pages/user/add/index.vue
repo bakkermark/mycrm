@@ -145,7 +145,7 @@ const handleSubmit = async () => {
           role: selectedRole.value,
           licenseHolderCompany: licenseHolderCompany.value,
           licenseHolderLicenseCode: licenseHolderLicenseCode.value,
-          licenseHolderPlan: selectedLicenseHoldersPlan.value,
+          plan: selectedLicenseHoldersPlan.value,
           createdAt: new Date()
         }
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
