@@ -28,20 +28,20 @@ const headers = [
     key: 'user',
   },
   {
+    title: 'Company',
+    key: 'Company',
+  },
+  {
     title: 'Role',
     key: 'role',
   },
   {
     title: 'Plan',
-    key: 'plan',
+    key: 'CurrentPlan',
   },
   {
-    title: 'Billing',
-    key: 'billing',
-  },
-  {
-    title: 'Status',
-    key: 'status',
+    title: 'Active',
+    key: 'Active',
   },
   {
     title: 'Actions',
@@ -73,23 +73,11 @@ const totalUsers = computed(() => usersData.value.totalUsers)
 const roles = [
   {
     title: 'Admin',
-    value: 'admin',
+    value: 'Admin',
   },
   {
-    title: 'Author',
-    value: 'author',
-  },
-  {
-    title: 'Editor',
-    value: 'editor',
-  },
-  {
-    title: 'Maintainer',
-    value: 'maintainer',
-  },
-  {
-    title: 'Subscriber',
-    value: 'subscriber',
+    title: 'Standard User',
+    value: 'Standard User',
   },
 ]
 
@@ -99,78 +87,52 @@ const plans = [
     value: 'basic',
   },
   {
-    title: 'Company',
-    value: 'company',
+    title: 'Extended',
+    value: 'extended',
   },
   {
-    title: 'Enterprise',
-    value: 'enterprise',
-  },
-  {
-    title: 'Team',
-    value: 'team',
-  },
+    title: 'Platinum',
+    value: 'platinum',
+  }
 ]
 
 const status = [
   {
-    title: 'Pending',
-    value: 'pending',
-  },
-  {
     title: 'Active',
-    value: 'active',
+    value: true,
   },
   {
     title: 'Inactive',
-    value: 'inactive',
+    value: false,
   },
 ]
 
+const formatActiveStatus = status => status ? 'Active' : 'Inactive';
+const getUserEnablingIcon = action => {
+  if (action === true)
+    return 'tabler-user-down'
+  if (action === false)
+    return 'tabler-user-up'
+}
 const resolveUserRoleVariant = role => {
   const roleLowerCase = role.toLowerCase()
-  if (roleLowerCase === 'subscriber')
-    return {
-      color: 'warning',
-      icon: 'tabler-circle-check',
-    }
-  if (roleLowerCase === 'author')
-    return {
-      color: 'success',
-      icon: 'tabler-user',
-    }
-  if (roleLowerCase === 'maintainer')
-    return {
-      color: 'primary',
-      icon: 'tabler-chart-pie-2',
-    }
-  if (roleLowerCase === 'editor')
-    return {
-      color: 'info',
-      icon: 'tabler-edit',
-    }
   if (roleLowerCase === 'admin')
     return {
-      color: 'secondary',
-      icon: 'tabler-device-laptop',
+      color: 'primary',
+      icon: 'tabler-user-star',
     }
-
-  return {
-    color: 'primary',
-    icon: 'tabler-user',
-  }
+  if (roleLowerCase === 'standard user')
+    return {
+      color: 'secondary',
+      icon: 'tabler-user',
+    }
 }
 
 const resolveUserStatusVariant = stat => {
-  const statLowerCase = stat.toLowerCase()
-  if (statLowerCase === 'pending')
-    return 'warning'
-  if (statLowerCase === 'active')
+  if (stat === true )
     return 'success'
-  if (statLowerCase === 'inactive')
-    return 'secondary'
-
-  return 'primary'
+  if (stat === false)
+    return 'error'
 }
 
 const isAddNewUserDrawerVisible = ref(false)
@@ -439,19 +401,22 @@ const widgetData = ref([
         </template>
 
         <!-- Status -->
-        <template #item.status="{ item }">
+        <template #item.Active="{ item }">
           <VChip
-            :color="resolveUserStatusVariant(item.status)"
+            :color="resolveUserStatusVariant(item.Active)"
             size="small"
             label
             class="text-capitalize"
           >
-            {{ item.status }}
+            {{ formatActiveStatus(item.Active) }}
           </VChip>
         </template>
 
         <!-- Actions -->
         <template #item.actions="{ item }">
+          <IconBtn>
+            <VIcon :icon="getUserEnablingIcon(item.Active)" />
+          </IconBtn>
           <IconBtn @click="deleteUser(item.id)">
             <VIcon icon="tabler-trash" />
           </IconBtn>
@@ -459,7 +424,7 @@ const widgetData = ref([
           <IconBtn>
             <VIcon icon="tabler-edit" />
           </IconBtn>
-
+          
           <VBtn
             icon
             variant="text"

@@ -1,9 +1,11 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { FieldValue } from "@firebase/firestore";
+// Firebase configuration
+import { initializeApp } from "firebase/app"
+import { getAnalytics } from "firebase/analytics"
+import { getFirestore } from "firebase/firestore"
+import { getAuth, setPersistence, browserLocalPersistence, Auth } from "firebase/auth"
+import { FieldValue } from "@firebase/firestore"
 
+// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBBuQ2YUp05ClALuSpg_8zxIEQCVyvC-tQ",
   authDomain: "dev-mycrm.firebaseapp.com",
@@ -12,19 +14,23 @@ const firebaseConfig = {
   messagingSenderId: "935411313031",
   appId: "1:935411313031:web:9c28fbd6e7e5e7fa300b22",
   measurementId: "G-WT7D0J0JH9"
-};
+}
 
-const app = initializeApp(firebaseConfig);
-const projectFirestore = getFirestore(app);
-const analytics = getAnalytics(app);
+// Initialize Firebase app
+const app = initializeApp(firebaseConfig)
 
-const auth = getAuth();
+// Firebase services
+const auth: Auth = getAuth(app)
+const projectFirestore = getFirestore(app)
+const analytics = getAnalytics(app)
+
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
-    console.log("State persistence set to 'local'");
+    console.log("State persistence set to 'local'")
   })
   .catch((error) => {
-    console.error("Could not set firebase auth state persistence: ", error);
-  });
+    console.error("Could not set firebase auth state persistence: ", error)
+  })
 
-export { app, projectFirestore, analytics, FieldValue, firebaseConfig };
+// Export Firebase services
+export { auth, projectFirestore, analytics, FieldValue, app }
