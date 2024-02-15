@@ -111,9 +111,9 @@ const roles = ['Admin', 'Standard User']
 const selectedRole = ref('')
 //TODO Should be from licenseholder data instead of fixed.
 const licenseHolders = ["TempPro VOF", "MultiMediaMarkers"]
-const licenseHolderCompany = ref('TempPro VOF')
-const licenseHolderLicenseCode = ref('Q9Hq2HgAUiGd7fM71qGJ')
-const selectedLicenseHoldersPlan = ref('Basic')
+const company = ref('TempPro VOF')
+const licenseCode = ref('Q9Hq2HgAUiGd7fM71qGJ')
+const selectedPlan = ref('Basic')
 const show1 = ref(false)
 const show2 = ref(true)
 const password = ref('')
@@ -139,13 +139,13 @@ const handleSubmit = async () => {
           firstName: firstName.value,
           infix: infix.value,
           lastName: lastName.value,
-          fullname: firstName.value + " " +  infix.value + " " + lastName.value,
+          fullname: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
           email: email.value,
           status: "Active",
           role: selectedRole.value,
-          licenseHolderCompany: licenseHolderCompany.value,
-          licenseHolderLicenseCode: licenseHolderLicenseCode.value,
-          plan: selectedLicenseHoldersPlan.value,
+          company: company.value,
+          licenseCode: licenseCode.value,
+          plan: selectedPlan.value,
           createdAt: new Date()
         }
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
