@@ -41,10 +41,10 @@
 <script lang="ts" setup>
 import {ref} from 'vue';
 import {useRouter} from 'vue-router';
-import { addDoc, collection } from 'firebase/firestore'
-import { projectFirestore } from '@/firebase/config';
+import {addDoc, collection, doc, setDoc} from 'firebase/firestore'
+import {auth, projectFirestore} from '@/firebase/config'
 import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
-import type {VForm} from 'vuetify/components';
+import type {VForm} from 'vuetify/components'
 
 const routePushName = 'license-list'
 const firebaseCollectionName = 'Licenses'
@@ -61,17 +61,20 @@ const handleSubmit = async () => {
   if (refForm.value) {
     const validationResult = await refForm.value.validate();
     if (validationResult.valid) {
-      const data = {
-        Company: company.value,
-        FirstName: firstName.value,
-        Infix: infix.value,
-        LastName: lastName.value,
-        Email: email.value,
+      try {
+        const data = {
+          company: company.value,
+          firstName: firstName.value,
+          infix: infix.value,
+          lastName: lastName.value,
+          fullname: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
+          email: email.value,
+        }
+        await addDoc(collection(projectFirestore, firebaseCollectionName), data)
+        await router.push({ name: routePushName })
+      } catch(err) {
+        console.error(err);
       }
-
-      await addDoc(collection(projectFirestore, firebaseCollectionName), data)
-      await router.push({ name: routePushName })
-    } else {
     }
   }
 };
