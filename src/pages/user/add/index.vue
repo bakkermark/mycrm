@@ -47,15 +47,9 @@
         />
       </VCol>
       <VCol cols="12" md="6">
-        <AppSelect
-          v-model="selectedLicenseHolder"
-          :items="licenseHolders"
-          :rules="[requiredValidator]"
-          placeholder="Select a license holder ..."
-          label="License holder"
-          name="selectLicenseHolder"
-          require
-        />
+        <AppSelect v-model="selectedLicenseHolder" :items="licenseHolders" :rules="[requiredValidator]"
+                   placeholder="Select a license holder ..." label="License holder" name="selectLicenseHolder" require/>
+        
       </VCol>
       <VCol cols="12" md="6">
         <AppSelect
@@ -89,7 +83,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref} from 'vue';
+import {onMounted, ref, computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {doc, setDoc} from 'firebase/firestore';
 import {auth, projectFirestore} from '@/firebase/config';
@@ -98,7 +92,7 @@ import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
 import type {VForm} from 'vuetify/components';
 import getLicenses from "@/composables/getLicenses";
 
-const { licenses, load } = getLicenses();
+const {licenses, load} = getLicenses();
 
 const routePushName = 'user-list'
 const firebaseCollectionName = 'Users'
@@ -125,8 +119,8 @@ const rules = {
 }
 
 onMounted(async () => {
-  await load()
-  licenseHolders.value = licenses.value.map(license => license.company || '');
+  await load();
+  licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
 });
 
 const handleSubmit = async () => {
@@ -137,7 +131,10 @@ const handleSubmit = async () => {
         // create a new user with Firebase Auth
         const credential = await createUserWithEmailAndPassword(auth, email.value, password.value);
         const uid = credential.user.uid;
-
+        const companyIdSplit = selectedLicenseHolder.value.split(' (');
+        const companyName = companyIdSplit[0]; // get the company part
+        const licenseId = companyIdSplit[1].replace(')', ''); // extract id from the string
+        
         // use the uid as the id for the new Firestore document
         const data = {
           id: uid,
@@ -148,8 +145,8 @@ const handleSubmit = async () => {
           email: email.value,
           status: "Active",
           role: selectedRole.value,
-          company: selectedLicenseHolder.value,
-          //licenseCode: licenseCode.value,
+          company: companyName,
+          licenseCode: licenseId,
           plan: selectedPlan.value,
           createdAt: new Date()
         }
@@ -157,7 +154,7 @@ const handleSubmit = async () => {
 
         // navigate to user list
         await router.push({name: routePushName});
-      } catch(err) {
+      } catch (err) {
         console.error(err);
       }
 
