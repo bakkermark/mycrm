@@ -12,11 +12,22 @@
                       :rules="[requiredValidator]"/>
       </VCol>
       <VCol cols="12" md="6">
-        <AppTextField v-model="email" label="Email" placeholder="Type in email address ..." :rules="[requiredValidator]"/>
+        <AppTextField v-model="email" label="Email" placeholder="Type in email address ..." :rules="[requiredValidator, emailValidator]"/>
       </VCol>
       <VCol cols="12" md="6">
         <AppTextField v-model="company" label="Company name" placeholder="Type in company name ..."
                       :rules="[requiredValidator]"/>
+      </VCol>
+      <VCol cols="12" md="6">
+        <AppSelect
+          v-model="selectedPlan"
+          :items="plans"
+          :rules="[requiredValidator]"
+          placeholder="Select a plan ..."
+          label="Plan"
+          name="selectPlan"
+          require
+        />
       </VCol>
       <VCol cols="12">
         <VBtn
@@ -56,6 +67,8 @@ const infix = ref('')
 const lastName = ref('')
 const email = ref('')
 const company = ref('')
+const plans = ['Basic', 'Extended', 'Platinum']
+const selectedPlan = ref('')
 
 const handleSubmit = async () => {
   if (refForm.value) {
@@ -67,8 +80,9 @@ const handleSubmit = async () => {
           firstName: firstName.value,
           infix: infix.value,
           lastName: lastName.value,
-          fullname: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
+          fullName: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
           email: email.value,
+          plan: selectedPlan.value,
         }
         await addDoc(collection(projectFirestore, firebaseCollectionName), data)
         await router.push({ name: routePushName })

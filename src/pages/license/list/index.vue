@@ -14,13 +14,7 @@
           {{ $t('company') }}
         </th>
         <th class="text-uppercase">
-          {{ $t('firstname') }}
-        </th>
-        <th class="text-uppercase">
-          {{ $t('infix') }}
-        </th>
-        <th class="text-uppercase">
-          {{ $t('lastname') }}
+          {{ $t('fullname') }}
         </th>
         <th class="text-uppercase">
           {{ $t('email') }}
@@ -34,22 +28,16 @@
       <tbody>
       <tr
         v-for="item in licenses"
-        :key="item.Email"
+        :key="item.email"
       >
         <td>
-          {{ item.Company }}
+          {{ item.company }}
         </td>
         <td>
-          {{ item.FirstName }}
+          {{ item.fullName }}
         </td>
         <td>
-          {{ item.Infix }}
-        </td>
-        <td>
-          {{ item.LastName }}
-        </td>
-        <td>
-          {{ item.Email }}
+          {{ item.email }}
         </td>
         <td>
           {{ item.id }}

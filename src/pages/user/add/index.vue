@@ -89,13 +89,16 @@
 </template>
 
 <script lang="ts" setup>
-import {ref} from 'vue';
+import {onMounted, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {doc, setDoc} from 'firebase/firestore';
 import {auth, projectFirestore} from '@/firebase/config';
 import {createUserWithEmailAndPassword} from 'firebase/auth';
 import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
 import type {VForm} from 'vuetify/components';
+import getLicenses from "@/composables/getLicenses";
+
+const { licenses, load } = getLicenses();
 
 const routePushName = 'user-list'
 const firebaseCollectionName = 'Users'
@@ -109,10 +112,7 @@ const email = ref('')
 const selectedLicenseHolder = ref('')
 const roles = ['Admin', 'Standard User']
 const selectedRole = ref('')
-//TODO Should be from licenseholder data instead of fixed.
-const licenseHolders = ["TempPro VOF", "MultiMediaMarkers"]
-const company = ref('TempPro VOF')
-const licenseCode = ref('Q9Hq2HgAUiGd7fM71qGJ')
+const licenseHolders = ref<string[]>([]);
 const selectedPlan = ref('Basic')
 const show1 = ref(false)
 const show2 = ref(true)
@@ -123,6 +123,11 @@ const rules = {
   required: (value: string) => !!value || 'Required.',
   min: (v: string) => v.length >= 8 || 'Min 8 characters',
 }
+
+onMounted(async () => {
+  await load()
+  licenseHolders.value = licenses.value.map(license => license.company || '');
+});
 
 const handleSubmit = async () => {
   if (refForm.value) {
@@ -143,8 +148,8 @@ const handleSubmit = async () => {
           email: email.value,
           status: "Active",
           role: selectedRole.value,
-          company: company.value,
-          licenseCode: licenseCode.value,
+          company: selectedLicenseHolder.value,
+          //licenseCode: licenseCode.value,
           plan: selectedPlan.value,
           createdAt: new Date()
         }

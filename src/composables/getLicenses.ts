@@ -6,7 +6,7 @@ import firebase from 'firebase/compat/app';
 interface Data {
   id: string;
   Code: string;
-  Company?: string; // Make sure your interface includes the Company property if it exists in your data
+  company?: string;
 }
 
 const getLicenses = () => {
@@ -17,13 +17,13 @@ const getLicenses = () => {
   const load = async () => {
     try {
       const collectionReference = collection(projectFirestore, firebaseCollectionName);
-      const dataQuery = query(collectionReference, orderBy("Company"));
+      const dataQuery = query(collectionReference, orderBy("company"));
       const dataSnapshots = await getDocs(dataQuery);
 
       licenses.value = dataSnapshots.docs.map((doc: DocumentSnapshot<firebase.firestore.DocumentData>) => {
         const docData = doc.data();
-        console.log(`Fetching data: ` + doc);
-        return { ...docData, id: doc.id } as Data;
+        if (!docData) return {id: '', Code: '', Company: ''} as Data;
+        return { ...docData, id: doc.id, company: docData.company } as Data;
       });
 
       // Log the count of records in licenses
