@@ -68,6 +68,13 @@
           class="me-2"
         >
           Save
+          <VTooltip
+            open-delay="500"
+            activator="parent"
+            location="top"
+          >
+            Save the user data
+          </VTooltip>
         </VBtn>
 
         <VBtn
@@ -76,6 +83,13 @@
           variant="tonal"
         >
           Reset
+          <VTooltip
+            open-delay="500"
+            activator="parent"
+            location="top"
+          >
+            Reset the form
+          </VTooltip>
         </VBtn>
       </VCol>
     </VRow>
@@ -141,7 +155,7 @@ const handleSubmit = async () => {
           firstName: firstName.value,
           infix: infix.value,
           lastName: lastName.value,
-          fullname: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
+          fullName: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
           email: email.value,
           status: "Active",
           role: selectedRole.value,

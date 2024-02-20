@@ -5,24 +5,27 @@ export default [
     icon: { icon: 'tabler-smart-home' },
   },
   {
-    title: 'Second Page',
-    to: { name: 'contacts' },
-    icon: { icon: 'tabler-file' },
-  },
-  {
     title: 'Licenses',
-    icon: { icon: 'tabler-file-certificate'},
+    icon: { icon: 'tabler-file-certificate' },
     children: [
-      { title: 'List', name: 'license-list' },
-      { title: 'Add', name: 'license-add' }
-    ]
+      { title: 'List', to: 'license-list' },
+      { title: 'Add', to: 'license-add' },
+    ],
   },
   {
     title: 'Users',
-    icon: { icon: 'tabler-users'},
+    icon: { icon: 'tabler-users' },
     children: [
-      { title: 'List', name: 'user-list' },
-      { title: 'Add', name: 'user-add' }
+      { title: 'List', to: 'user-list' },
+      { title: 'Add', to: 'user-add' },
+    ],
+  },
+  {
+    title: 'Relations',
+    icon: { icon: 'tabler-users-group'},
+    children: [
+      { title: 'List', to: 'relation-list' },
+      { title: 'Add', to: 'relation-add' },
     ]
-  }
+  },
 ]

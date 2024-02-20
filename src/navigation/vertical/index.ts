@@ -5,11 +5,6 @@ export default [
     icon: { icon: 'tabler-smart-home' },
   },
   {
-    title: 'Contacts',
-    to: { name: 'contacts' },
-    icon: { icon: 'tabler-file' },
-  },
-  {
     title: 'Licenses',
     icon: { icon: 'tabler-file-certificate' },
     children: [
@@ -18,11 +13,19 @@ export default [
     ],
   },
   {
-    title: 'Gebruikers',
+    title: 'Users',
     icon: { icon: 'tabler-users' },
     children: [
       { title: 'List', to: 'user-list' },
       { title: 'Add', to: 'user-add' },
     ],
+  },
+  {
+    title: 'Relations',
+    icon: { icon: 'tabler-users-group'},
+    children: [
+      { title: 'List', to: 'relation-list' },
+      { title: 'Add', to: 'relation-add' },
+    ]
   },
 ]
