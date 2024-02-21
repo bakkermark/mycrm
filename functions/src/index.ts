@@ -68,9 +68,9 @@ export const changeUserStatus =
     await db.collection("Users").doc(uid).update({status: newStatus});
     let message = "User status has been changed";
     if (newStatus === "Active") {
-      message = "User is successfully enabled.";
+      message = "ChangeUserStatus.Message1";
     } else if (newStatus === "Inactive") {
-      message = "User is successfully disabled.";
+      message = "ChangeUserStatus.Message2";
     }
     return {
       success: true,

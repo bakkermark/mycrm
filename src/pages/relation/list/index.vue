@@ -11,10 +11,6 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 const isLoading = ref(true)
 
-setTimeout(() => {
-  isLoading.value = false
-}, 3000)
-
 // 👉 Store
 const searchQuery = ref('')
 const selectedRole = ref()
@@ -26,10 +22,14 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-const updateOptions = options => {
-  page.value = options.page
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
+interface Options {
+  page: number;
+  sortBy: { key: string; order: string }[];
+}
+const updateOptions = (options: Options) => {
+  page.value = options.page;
+  sortBy.value = options.sortBy[0]?.key;
+  orderBy.value = options.sortBy[0]?.order;
 }
 
 // Headers
@@ -62,7 +62,7 @@ const headers = [
 ]
 
 // Status of user
-const resolveTooltipActionIconUser = status => {
+const resolveTooltipActionIconUser = (status: string) => {
   const statusLowerCase = status.toLowerCase()
   if (statusLowerCase === 'active')
     return 'Disable user'
@@ -73,8 +73,8 @@ const resolveTooltipActionIconUser = status => {
 
 // Snackbar message
 const snackbarColor = ref('success');
-const isSnackbarVisible = ref(false); // Controls whether the snackbar is visible or not
-const snackbarMessage = ref(''); // Holds the message to be shown in the snackbar
+const isSnackbarVisible = ref(false);
+const snackbarMessage = ref('');
 
 // Enabling or disabling user
 interface ChangeUserStatusResponse {
@@ -85,6 +85,11 @@ const functions = getFunctions();
 const changeUserStatus = httpsCallable(functions, 'changeUserStatus');
 const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
   const user = usersData.value.find(user => user.id === uid);
+  if (!user) {
+    snackbarMessage.value = t("No user found with this uid. Please contact support desk.");
+    snackbarColor.value = "error";
+    return;
+  }
   user.isLoading = true;
   const { data } = await changeUserStatus({ uid, enable: shouldEnable });
   const response = data as ChangeUserStatusResponse;
@@ -113,7 +118,8 @@ interface User {
   licenseCode: string;
   plan: string;
   role: string;
-  status: string
+  status: string;
+  isLoading: boolean;
 }
 const usersData = ref<User[]>([]);
 onMounted(async () => {
@@ -135,7 +141,8 @@ onMounted(async () => {
       licenseCode: user.licenseCode,
       plan: user.plan,
       role: user.role,
-      status: user.status
+      status: user.status,
+      isLoading: false,
     }));
 
     for (let i = 0; i < usersData.value.length; i++) {
@@ -194,7 +201,7 @@ const status = [
   },
 ]
 
-const resolveUserRoleVariant = role => {
+const resolveUserRoleVariant = (role:string) => {
   const roleLowerCase = role.toLowerCase()
   if (roleLowerCase === 'admin')
     return {
@@ -213,7 +220,7 @@ const resolveUserRoleVariant = role => {
   }
 }
 
-const resolveUserStatusVariant = stat => {
+const resolveUserStatusVariant = (stat:string) => {
   const statLowerCase = stat.toLowerCase()
   if (statLowerCase === 'active')
     return 'success'
@@ -223,37 +230,18 @@ const resolveUserStatusVariant = stat => {
   return 'primary'
 }
 
-const resolveActionIconUser = action => {
-  const actionLowerCase = action.toLowerCase()
-  if (actionLowerCase === 'active')
-    return {
-      color: 'error',
-      icon: 'tabler-user-down',
-    }
-  if (actionLowerCase === 'inactive')
-    return {
-      color: 'success',
-      icon: 'tabler-user-up',
-    }
-}
+const resolveActionIconUser = (status: string) => {
+  const statusLowerCase = status.toLowerCase();
+
+  if (statusLowerCase === 'inactive') return { color: 'success', icon: 'tabler-user-up' };
+  
+  return { color: 'error', icon: 'tabler-user-down' };
+};
 
 const isAddNewUserDrawerVisible = ref(false)
 
-const addNewUser = async userData => {
-  await $api('/apps/users', {
-    method: 'POST',
-    body: userData,
-  })
-
-  // refetch User
-  fetchUsers()
-}
-
-const deleteUser = async id => {
+const deleteUser = async (id: string) => {
   await $api(`/apps/users/${ id }`, { method: 'DELETE' })
-
-  // refetch User
-  fetchUsers()
 }
 
 const widgetData = ref([
