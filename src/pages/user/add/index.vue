@@ -62,6 +62,57 @@
           require
         />
       </VCol>
+      <VCol cols="12" md="6">
+            <!-- 👉 Avatar -->
+            <VAvatar
+              rounded
+              size="100"
+              class="me-6"
+              :image="avatarImage"
+            />
+
+            <!-- 👉 Upload Photo -->
+            <form class="d-flex flex-column justify-center gap-4">
+              <div class="d-flex flex-wrap gap-2">
+                <VBtn
+                  color="primary"
+                  @click="refInputEl?.click()"
+                >
+                  <VIcon
+                    icon="tabler-cloud-upload"
+                    class="d-sm-none"
+                  />
+                  <span class="d-none d-sm-block">Upload photo</span>
+                </VBtn>
+
+                <input
+                  ref="refInputEl"
+                  type="file"
+                  name="file"
+                  accept=".jpeg,.png,.jpg,GIF"
+                  hidden
+                  @input="changeAvatar"
+                >
+
+                <VBtn
+                  type="reset"
+                  color="secondary"
+                  variant="tonal"
+                  @click="resetAvatar"
+                >
+                  <span class="d-none d-sm-block">Reset</span>
+                  <VIcon
+                    icon="tabler-refresh"
+                    class="d-sm-none"
+                  />
+                </VBtn>
+              </div>
+
+              <p class="text-body-1 mb-0">
+                Allowed JPG, GIF or PNG. Max size of 800K
+              </p>
+            </form>
+      </VCol>
       <VCol cols="12">
         <VBtn
           type="submit"
@@ -97,35 +148,55 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref, computed} from 'vue';
-import {useRouter} from 'vue-router';
-import {doc, setDoc} from 'firebase/firestore';
-import {auth, projectFirestore} from '@/firebase/config';
-import {createUserWithEmailAndPassword} from 'firebase/auth';
-import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
-import type {VForm} from 'vuetify/components';
+import { ref as vueRef, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { doc, setDoc } from 'firebase/firestore';
+import { ref as fbRef, getDownloadURL, uploadBytes } from '@firebase/storage';
+import { auth, projectFirestore, projectStorage } from '@/firebase/config';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import AppTextField from "@core/components/app-form-elements/AppTextField.vue";
+import type { VForm } from 'vuetify/components';
 import getLicenses from "@/composables/getLicenses";
+import { useI18n } from 'vue-i18n';
+import { useSnackbarStore } from "@/plugins/pinia/snackbarStore";
 
-const {licenses, load} = getLicenses();
-
+const { t } = useI18n();
+const avatarImage = vueRef('/Avatars/14.png')
+const { licenses, load } = getLicenses();
 const routePushName = 'user-list'
 const firebaseCollectionName = 'Users'
-
 const router = useRouter();
-const refForm = ref<VForm | null>(null);
-const firstName = ref('')
-const infix = ref('')
-const lastName = ref('')
-const email = ref('')
-const selectedLicenseHolder = ref('')
+const refForm = vueRef<VForm | null>(null);
+const firstName = vueRef('')
+const infix = vueRef('')
+const lastName = vueRef('')
+const email = vueRef('')
+const selectedLicenseHolder = vueRef('')
 const roles = ['Admin', 'Standard User']
-const selectedRole = ref('')
-const licenseHolders = ref<string[]>([]);
-const selectedPlan = ref('Basic')
-const show1 = ref(false)
-const show2 = ref(true)
-const password = ref('')
-const confirmPassword = ref('')
+const selectedRole = vueRef('')
+const licenseHolders = vueRef<string[]>([]);
+const selectedPlan = vueRef('Basic')
+const show1 = vueRef(false)
+const show2 = vueRef(true)
+const password = vueRef('')
+const confirmPassword = vueRef('')
+const refInputEl = vueRef()
+
+const changeAvatar = (file: Event) => {
+  const fileReader = new FileReader()
+  const files = (file.target as HTMLInputElement).files
+  if (files && files.length) {
+    fileReader.readAsDataURL(files[0])
+    fileReader.onload = () => {
+      if (typeof fileReader.result === 'string')
+        avatarImage.value = ''
+    }
+  }
+}
+
+const resetAvatar = () => {
+  avatarImage.value = ''
+}
 
 const rules = {
   required: (value: string) => !!value || 'Required.',
@@ -142,14 +213,16 @@ const handleSubmit = async () => {
     const validationResult = await refForm.value.validate();
     if (validationResult.valid) {
       try {
-        // create a new user with Firebase Auth
         const credential = await createUserWithEmailAndPassword(auth, email.value, password.value);
         const uid = credential.user.uid;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
-        const companyName = companyIdSplit[0]; // get the company part
-        const licenseId = companyIdSplit[1].replace(')', ''); // extract id from the string
+        const companyName = companyIdSplit[0];
+        const licenseId = companyIdSplit[1].replace(')', '');
+        const file = refInputEl.value?.files[0];
+        const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
+        const snapshot = await uploadBytes(fileRef, file);
+        const avatar = await getDownloadURL(snapshot.ref);
         
-        // use the uid as the id for the new Firestore document
         const data = {
           id: uid,
           firstName: firstName.value,
@@ -162,16 +235,20 @@ const handleSubmit = async () => {
           company: companyName,
           licenseCode: licenseId,
           plan: selectedPlan.value,
+          avatar: avatar,
           createdAt: new Date()
         }
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
-
-        // navigate to user list
-        await router.push({name: routePushName});
+        const snackbarStore = useSnackbarStore();
+        const snackBarPayload = { color: "success", message: t("User has been added successfully.") }
+        snackbarStore.showSnackbar(snackBarPayload)
+        await router.push({ name: routePushName });
       } catch (err) {
+        const snackbarStore = useSnackbarStore();
+        const snackBarPayload = { color: "error", message: t("User could not be added. Details: " + err) }
+        snackbarStore.showSnackbar(snackBarPayload)
         console.error(err);
       }
-
     }
   }
 };

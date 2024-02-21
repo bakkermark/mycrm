@@ -4,6 +4,7 @@ import { getAnalytics } from "firebase/analytics"
 import { getFirestore } from "firebase/firestore"
 import { getAuth, setPersistence, browserLocalPersistence, Auth } from "firebase/auth"
 import { FieldValue } from "@firebase/firestore"
+import { getStorage } from "firebase/storage";
 
 // Your Firebase config
 const firebaseConfig = {
@@ -18,6 +19,7 @@ const firebaseConfig = {
 
 // Initialize Firebase app
 const app = initializeApp(firebaseConfig)
+const projectStorage = getStorage(app);
 
 // Firebase services
 const auth: Auth = getAuth(app)
@@ -33,4 +35,4 @@ setPersistence(auth, browserLocalPersistence)
   })
 
 // Export Firebase services
-export { auth, projectFirestore, analytics, FieldValue, app }
+export { auth, projectFirestore, projectStorage, analytics, FieldValue, app };

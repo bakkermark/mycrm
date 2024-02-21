@@ -56,10 +56,13 @@ import {addDoc, collection, doc, setDoc} from 'firebase/firestore'
 import {auth, projectFirestore} from '@/firebase/config'
 import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
 import type {VForm} from 'vuetify/components'
+import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const routePushName = 'license-list'
 const firebaseCollectionName = 'Licenses'
-
+const snackbar = useSnackbarStore();
 const router = useRouter();
 const refForm = ref<VForm | null>(null);
 const firstName = ref('')
@@ -85,8 +88,12 @@ const handleSubmit = async () => {
           plan: selectedPlan.value,
         }
         await addDoc(collection(projectFirestore, firebaseCollectionName), data)
+        const snackBarPayload = { color: "success", message: t("License has been added succesfully.") }
+        snackbar.showSnackbar(snackBarPayload)
         await router.push({ name: routePushName })
       } catch(err) {
+        const snackBarPayload = { color: "error", message: t("License could not be added. Details: " + err) }
+        snackbar.showSnackbar(snackBarPayload)
         console.error(err);
       }
     }

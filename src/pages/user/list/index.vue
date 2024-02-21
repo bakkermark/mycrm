@@ -1,13 +1,17 @@
-<script setup>
+<script lang="ts" setup>
+import { ref, computed, onMounted } from 'vue';
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
 import { paginationMeta } from '@api-utils/paginationMeta'
+import {getFunctions, httpsCallable} from 'firebase/functions';
+import {getStorage, ref as storageRef, getDownloadURL} from 'firebase/storage';
+import {app} from '@/firebase/config';
+import { useI18n } from 'vue-i18n';
+import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 
+const { t } = useI18n();
 const isLoading = ref(true)
-
-setTimeout(() => {
-  isLoading.value = false
-}, 3000)
+const snackbar = useSnackbarStore();
 
 // 👉 Store
 const searchQuery = ref('')
@@ -20,11 +24,14 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-
-const updateOptions = options => {
-  page.value = options.page
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
+interface Options {
+  page: number;
+  sortBy: { key: string; order: string }[];
+}
+const updateOptions = (options: Options) => {
+  page.value = options.page;
+  sortBy.value = options.sortBy[0]?.key;
+  orderBy.value = options.sortBy[0]?.order;
 }
 
 // Headers
@@ -34,12 +41,16 @@ const headers = [
     key: 'user',
   },
   {
-    title: 'Role',
-    key: 'role',
+    title: 'Company',
+    key: 'company',
   },
   {
     title: 'Plan',
     key: 'plan',
+  },
+  {
+    title: 'Role',
+    key: 'role',
   },
   {
     title: 'Status',
@@ -52,24 +63,106 @@ const headers = [
   },
 ]
 
-const {
-  data: usersData,
-  execute: fetchUsers,
-} = await useApi(createUrl('/apps/users', {
-  query: {
-    q: searchQuery,
-    status: selectedStatus,
-    plan: selectedPlan,
-    role: selectedRole,
-    itemsPerPage,
-    page,
-    sortBy,
-    orderBy,
-  },
-}))
+// Status of user
+const resolveTooltipActionIconUser = (status: string) => {
+  const statusLowerCase = status.toLowerCase()
+  if (statusLowerCase === 'active')
+    return 'Disable user'
+  if (statusLowerCase === 'inactive')
+    return 'Enable user'
+  return 'Enable user' // Default text if no match found
+}
 
-const users = computed(() => usersData.value.users)
-const totalUsers = computed(() => usersData.value.totalUsers)
+// Snackbar message
+const snackbarColor = ref('success');
+const isSnackbarVisible = ref(false);
+const snackbarMessage = ref('');
+
+// Enabling or disabling user
+interface ChangeUserStatusResponse {
+  success: boolean;
+  message: string;
+}
+const functions = getFunctions();
+const changeUserStatus = httpsCallable(functions, 'changeUserStatus');
+const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
+  const user = usersData.value.find(user => user.id === uid);
+  if (!user) {
+    const snackBarPayload = { color: "error", message: t("No user found with this uid. Please contact support desk.") }
+    snackbar.showSnackbar(snackBarPayload)
+    return;
+  }
+  user.isLoading = true;
+  const { data } = await changeUserStatus({ uid, enable: shouldEnable });
+  const response = data as ChangeUserStatusResponse;
+  if(response.success) {
+    // If operation was successful, update status of the user in the local data
+    user.status = shouldEnable ? 'Active' : 'Inactive';
+    const snackBarPayload = { color: "success", message: t(response.message) }
+    snackbar.showSnackbar(snackBarPayload)
+  } else {
+    const snackBarPayload = { color: "error", message: t(response.message) }
+    snackbar.showSnackbar(snackBarPayload)
+  }
+  user.isLoading = false;
+};
+
+interface User {
+  avatar: string;
+  company: string;
+  email: string;
+  firstName: string;
+  fullName: string;
+  id: string
+  infix: string;
+  lastName: string;
+  licenseCode: string;
+  plan: string;
+  role: string;
+  status: string;
+  isLoading: boolean;
+}
+const usersData = ref<User[]>([]);
+onMounted(async () => {
+  const functions = getFunctions(app);
+  const getUsers = httpsCallable(functions, 'getUsers');
+  const storage = getStorage(app);
+
+  try {
+    const result = await getUsers();
+    usersData.value = (result.data as any[]).map(user => ({
+      avatar: user.avatar,
+      company: user.company,
+      email: user.email,
+      firstName: user.firstName,
+      fullName: user.fullName,
+      id: user.id,
+      infix: user.infix,
+      lastName: user.lastName,
+      licenseCode: user.licenseCode,
+      plan: user.plan,
+      role: user.role,
+      status: user.status,
+      isLoading: false,
+    }));
+
+    for (let i = 0; i < usersData.value.length; i++) {
+      const avatarRef = storageRef(storage, usersData.value[i].avatar);
+      if (usersData.value[i].avatar !== '')
+        usersData.value[i].avatar = await getDownloadURL(avatarRef);
+    }
+  }
+  catch (error) {
+    console.log('Error getting users data: ', error); // Log any errors
+  }
+  finally {
+    isLoading.value = false;
+    console.log(usersData.value); // Log users data on completion
+  }
+});
+
+const users = computed(() => usersData.value);
+const totalUsers = computed(() => usersData.value.length);
 
 // 👉 search filters
 const roles = [
@@ -109,7 +202,7 @@ const status = [
   },
 ]
 
-const resolveUserRoleVariant = role => {
+const resolveUserRoleVariant = (role:string) => {
   const roleLowerCase = role.toLowerCase()
   if (roleLowerCase === 'admin')
     return {
@@ -121,14 +214,14 @@ const resolveUserRoleVariant = role => {
       color: 'secondary',
       icon: 'tabler-user',
     }
-  
+
   return {
     color: 'secondary',
     icon: 'tabler-user',
   }
 }
 
-const resolveUserStatusVariant = stat => {
+const resolveUserStatusVariant = (stat:string) => {
   const statLowerCase = stat.toLowerCase()
   if (statLowerCase === 'active')
     return 'success'
@@ -138,37 +231,18 @@ const resolveUserStatusVariant = stat => {
   return 'primary'
 }
 
-const resolveActionIconUser = action => {
-  const actionLowerCase = action.toLowerCase()
-  if (actionLowerCase === 'active')
-    return {
-      color: 'error',
-      icon: 'tabler-user-down',
-    }
-  if (actionLowerCase === 'inactive')
-    return {
-      color: 'success',
-      icon: 'tabler-user-up',
-    }
-}
+const resolveActionIconUser = (status: string) => {
+  const statusLowerCase = status.toLowerCase();
+
+  if (statusLowerCase === 'inactive') return { color: 'success', icon: 'tabler-user-up' };
+
+  return { color: 'error', icon: 'tabler-user-down' };
+};
 
 const isAddNewUserDrawerVisible = ref(false)
 
-const addNewUser = async userData => {
-  await $api('/apps/users', {
-    method: 'POST',
-    body: userData,
-  })
-
-  // refetch User
-  fetchUsers()
-}
-
-const deleteUser = async id => {
+const deleteUser = async (id: string) => {
   await $api(`/apps/users/${ id }`, { method: 'DELETE' })
-
-  // refetch User
-  fetchUsers()
 }
 
 const widgetData = ref([
@@ -370,7 +444,7 @@ const widgetData = ref([
         <!-- User -->
         <template #item.user="{ item }">
           <div class="d-flex align-center">
-            
+
             <VAvatar
               size="34"
               :variant="!item.avatar ? 'tonal' : undefined"
@@ -378,10 +452,10 @@ const widgetData = ref([
               class="me-3"
             >
               <VImg
-                v-if="item.avatar"
+                v-if="item.avatar && item.avatar.startsWith('https://')"
                 :src="item.avatar"
               />
-              <span v-else>{{ avatarText(item.fullName) }}</span>
+              <span v-else>{{ avatarText(item.firstName + " " + item.lastName) }}</span>
             </VAvatar>
             <div class="d-flex flex-column">
               <h6 class="text-base">
@@ -401,6 +475,11 @@ const widgetData = ref([
               <span class="text-sm text-medium-emphasis">{{ item.email }}</span>
             </div>
           </div>
+        </template>
+
+        <!-- Company -->
+        <template #item.company="{ item }">
+          <span class="text-capitalize font-weight-medium">{{ item.company }}</span>
         </template>
 
         <!-- 👉 Role -->
@@ -439,15 +518,28 @@ const widgetData = ref([
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          
-          <IconBtn>
+
+          <IconBtn
+            :disabled="item.isLoading"
+            v-if="!item.isLoading"
+            @click="changeUserStatusOnClick(item.id, item.status === 'Inactive')"
+          >
             <VTooltip
               location="top"
               activator="parent"
             >
-              Tooltip on Avatar
+              {{ resolveTooltipActionIconUser(item.status) }}
             </VTooltip>
             <VIcon :icon="resolveActionIconUser(item.status).icon" :color="resolveActionIconUser(item.status).color" />
+          </IconBtn>
+          <IconBtn
+            v-else
+          >
+            <VProgressCircular
+              :size="20"
+              :width="2"
+              indeterminate
+            />
           </IconBtn>
           <IconBtn @click="deleteUser(item.id)">
             <VTooltip
@@ -553,8 +645,14 @@ const widgetData = ref([
       @user-data="addNewUser"
     />
   </section>
+  <VSnackbar
+    v-model="isSnackbarVisible"
+    :timeout="3000"
+    location="top end"
+    transition="fade-transition"
+    variant="flat"
+    :color="snackbarColor"
+  >
+    {{ snackbarMessage }}
+  </VSnackbar>
 </template>
-
-
-
-

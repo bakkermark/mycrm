@@ -4,6 +4,8 @@ import ScrollToTop from '@core/components/ScrollToTop.vue'
 import initCore from '@core/initCore'
 import { initConfigStore, useConfigStore } from '@core/stores/config'
 import { hexToRgb } from '@layouts/utils'
+import { useSnackbarStore } from '@/plugins/pinia/snackbarStore';
+const snackbar = useSnackbarStore();
 
 const { global } = useTheme()
 
@@ -21,6 +23,16 @@ const configStore = useConfigStore()
       <RouterView />
 
       <ScrollToTop />
+      <VSnackbar
+        v-model="snackbar.isVisible"
+        :timeout="3000"
+        location="top end"
+        transition="fade-transition"
+        variant="flat"
+        :color="snackbar.color"
+      >
+        {{ snackbar.message }}
+      </VSnackbar>
     </VApp>
   </VLocaleProvider>
 </template>
