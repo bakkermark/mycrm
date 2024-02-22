@@ -4,7 +4,6 @@ import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
 import { paginationMeta } from '@api-utils/paginationMeta'
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import {getStorage, ref as storageRef, getDownloadURL} from 'firebase/storage';
 import {app} from '@/firebase/config';
 import { useI18n } from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
@@ -82,6 +81,7 @@ const snackbarMessage = ref('');
 interface cloudFunctionResponse {
   success: boolean;
   message: string;
+  returnValue: string;
 }
 const functions = getFunctions();
 const changeUserStatus = httpsCallable(functions, 'changeUserStatus');
@@ -127,7 +127,6 @@ const usersData = ref<User[]>([]);
 onMounted(async () => {
   const functions = getFunctions(app);
   const getUsers = httpsCallable(functions, 'getUsers');
-  const storage = getStorage(app);
 
   try {
     const result = await getUsers();
@@ -245,7 +244,6 @@ const resolveActionIconUser = (status: string) => {
 
 const isAddNewUserDrawerVisible = ref(false)
 
-const deleteUserLoading = ref(false);
 const deleteUser = async (id: string) => {
   const user = usersData.value.find(user => user.id === id);
   if (!user) {

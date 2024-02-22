@@ -115,8 +115,7 @@ import { ref as ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { doc, setDoc } from 'firebase/firestore';
 import { ref as fbRef, getDownloadURL, uploadBytes } from '@firebase/storage';
-import { auth, projectFirestore, projectStorage } from '@/firebase/config';
-import * as firebase from 'firebase/app';
+import { projectFirestore, projectStorage } from '@/firebase/config';
 import 'firebase/functions';
 import type { VForm } from 'vuetify/components';
 import getLicenses from "@/composables/getLicenses";
@@ -124,6 +123,8 @@ import { useI18n } from 'vue-i18n';
 import { useSnackbarStore } from "@/plugins/pinia/snackbarStore";
 import { getAuth } from "firebase/auth";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 
 const {t} = useI18n();
 const avatarImage = ref('')
@@ -180,6 +181,13 @@ onMounted(async () => {
 });
 
 const submittingData = ref(false)
+
+interface cloudFunctionResponse {
+  success: boolean;
+  message: string;
+  returnValue: string;
+}
+
 const handleSubmit = async () => {
   if (refForm.value) {
     const validationResult = await refForm.value.validate();
@@ -187,14 +195,16 @@ const handleSubmit = async () => {
       try {
         submittingData.value = true;
 
-        const addUserFunc = firebase.functions().httpsCallable('addUser');
-        const result = await addUserFunc({ email: email.value, password: password.value });
+        const functions = getFunctions();
+        const addUser = httpsCallable(functions, 'addUser');
+        const result = await addUser({ email: email.value, password: password.value });
+        const response = result.data as cloudFunctionResponse;
 
-        if (!result.data.success) {
-          throw new Error(result.data.message);
+        if (!response.success) {
+          throw new Error(response.message);
         }
 
-        const uid = result.data.returnValue;
+        const uid = response.returnValue;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
         const companyName = companyIdSplit[0];
         const licenseId = companyIdSplit[1].replace(')', '');
