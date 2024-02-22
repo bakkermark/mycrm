@@ -79,7 +79,7 @@ const isSnackbarVisible = ref(false);
 const snackbarMessage = ref('');
 
 // Enabling or disabling user
-interface ChangeUserStatusResponse {
+interface cloudFunctionResponse {
   success: boolean;
   message: string;
 }
@@ -94,7 +94,7 @@ const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
   }
   user.isLoading = true;
   const { data } = await changeUserStatus({ uid, enable: shouldEnable });
-  const response = data as ChangeUserStatusResponse;
+  const response = data as cloudFunctionResponse;
   if(response.success) {
     // If operation was successful, update status of the user in the local data
     user.status = shouldEnable ? 'Active' : 'Inactive';
@@ -149,7 +149,8 @@ onMounted(async () => {
     for (let i = 0; i < usersData.value.length; i++) {
       const avatarRef = storageRef(storage, usersData.value[i].avatar);
       if (usersData.value[i].avatar !== '')
-        usersData.value[i].avatar = await getDownloadURL(avatarRef);
+        console.log("User Avatar: " + usersData.value[i].avatar )
+        //usersData.value[i].avatar = await getDownloadURL(avatarRef);
     }
   }
   catch (error) {
@@ -242,8 +243,35 @@ const resolveActionIconUser = (status: string) => {
 const isAddNewUserDrawerVisible = ref(false)
 
 const deleteUser = async (id: string) => {
-  await $api(`/apps/users/${ id }`, { method: 'DELETE' })
-}
+  const user = usersData.value.find(user => user.id === id);
+  if (!user) {
+    const snackBarPayload = { color: "error", message: t("No user found with this uid. Please contact support desk.") }
+    snackbar.showSnackbar(snackBarPayload)
+    return;
+  }
+  user.isLoading = true;
+
+  const functions = getFunctions(); // if you have not retrieved functions already
+  const deleteUserFunction = httpsCallable(functions, 'deleteUser');
+  try {
+    const { data } = await deleteUserFunction({ uid: id });
+    const response = data as cloudFunctionResponse;
+    if(response.success) {
+      // If operation was successful, remove user from local data
+      usersData.value = usersData.value.filter(user => user.id !== id);
+      const snackBarPayload = { color: "success", message: t(response.message) };
+      snackbar.showSnackbar(snackBarPayload);
+    } else {
+      const snackBarPayload = { color: "error", message: t(response.message) };
+      snackbar.showSnackbar(snackBarPayload);
+    }
+  } catch(error) {
+    const snackBarPayload = { color: "error", message: t("Error while performing deletion. Please contact support desk.") };
+    snackbar.showSnackbar(snackBarPayload);
+  } finally {
+    user.isLoading = false;
+  }
+};
 
 const widgetData = ref([
   {
@@ -541,7 +569,10 @@ const widgetData = ref([
               indeterminate
             />
           </IconBtn>
-          <IconBtn @click="deleteUser(item.id)">
+          <IconBtn
+            :disabled="item.isLoading"
+            v-if="!item.isLoading"
+            @click="deleteUser(item.id)">
             <VTooltip
               location="top"
               activator="parent"
