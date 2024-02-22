@@ -111,18 +111,19 @@
 </template>
 
 <script lang="ts" setup>
-import {ref as ref, onMounted} from 'vue';
-import {useRouter} from 'vue-router';
-import {doc, setDoc} from 'firebase/firestore';
-import {ref as fbRef, getDownloadURL, uploadBytes} from '@firebase/storage';
-import {auth, projectFirestore, projectStorage} from '@/firebase/config';
-import {createUserWithEmailAndPassword} from 'firebase/auth';
-import AppTextField from "@core/components/app-form-elements/AppTextField.vue";
-import type {VForm} from 'vuetify/components';
+import { ref as ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { doc, setDoc } from 'firebase/firestore';
+import { ref as fbRef, getDownloadURL, uploadBytes } from '@firebase/storage';
+import { auth, projectFirestore, projectStorage } from '@/firebase/config';
+import * as firebase from 'firebase/app';
+import 'firebase/functions';
+import type { VForm } from 'vuetify/components';
 import getLicenses from "@/composables/getLicenses";
-import {useI18n} from 'vue-i18n';
-import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
+import { useI18n } from 'vue-i18n';
+import { useSnackbarStore } from "@/plugins/pinia/snackbarStore";
 import { getAuth } from "firebase/auth";
+import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
 
 const {t} = useI18n();
 const avatarImage = ref('')
@@ -185,8 +186,15 @@ const handleSubmit = async () => {
     if (validationResult.valid) {
       try {
         submittingData.value = true;
-        const credential = await createUserWithEmailAndPassword(auth, email.value, password.value);
-        const uid = credential.user.uid;
+
+        const addUserFunc = firebase.functions().httpsCallable('addUser');
+        const result = await addUserFunc({ email: email.value, password: password.value });
+
+        if (!result.data.success) {
+          throw new Error(result.data.message);
+        }
+
+        const uid = result.data.returnValue;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
         const companyName = companyIdSplit[0];
         const licenseId = companyIdSplit[1].replace(')', '');
@@ -210,23 +218,26 @@ const handleSubmit = async () => {
           avatar: avatar,
           createdAt: new Date()
         }
+
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
+
         const authInstance = getAuth();
         const currentUser = authInstance.currentUser;
         if (currentUser) {
           console.log("Current logged-in user after submit: ", currentUser.email);
         }
+
         const snackbarStore = useSnackbarStore();
-        const snackBarPayload = {color: "success", message: t("User has been added successfully.")}
+        const snackBarPayload = { color: "success", message: t("User has been added successfully.") }
         snackbarStore.showSnackbar(snackBarPayload)
-        await router.push({name: routePushName});
+        await router.push({ name: routePushName });
+
       } catch (err) {
         const snackbarStore = useSnackbarStore();
-        const snackBarPayload = {color: "error", message: t("User could not be added. Details: " + err)}
+        const snackBarPayload = { color: "error", message: t("User could not be added. Details: " + err) }
         snackbarStore.showSnackbar(snackBarPayload)
         console.error(err);
-      }
-      finally {
+      } finally {
         submittingData.value = false;
       }
     }
