@@ -92,7 +92,7 @@ const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
     snackbar.showSnackbar(snackBarPayload)
     return;
   }
-  user.isLoading = true;
+  user.changeUserStatusLoading = true;
   const { data } = await changeUserStatus({ uid, enable: shouldEnable });
   const response = data as cloudFunctionResponse;
   if(response.success) {
@@ -104,7 +104,7 @@ const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
     const snackBarPayload = { color: "error", message: t(response.message) }
     snackbar.showSnackbar(snackBarPayload)
   }
-  user.isLoading = false;
+  user.changeUserStatusLoading = false;
 };
 
 interface User {
@@ -120,7 +120,8 @@ interface User {
   plan: string;
   role: string;
   status: string;
-  isLoading: boolean;
+  changeUserStatusLoading: boolean;
+  deleteUserLoading: boolean;
 }
 const usersData = ref<User[]>([]);
 onMounted(async () => {
@@ -143,15 +144,9 @@ onMounted(async () => {
       plan: user.plan,
       role: user.role,
       status: user.status,
-      isLoading: false,
+      changeUserStatusLoading: false,
+      deleteUserLoading: false,
     }));
-
-    for (let i = 0; i < usersData.value.length; i++) {
-      const avatarRef = storageRef(storage, usersData.value[i].avatar);
-      if (usersData.value[i].avatar !== '')
-        console.log("User Avatar: " + usersData.value[i].avatar )
-        //usersData.value[i].avatar = await getDownloadURL(avatarRef);
-    }
   }
   catch (error) {
     console.log('Error getting users data: ', error); // Log any errors
@@ -167,6 +162,10 @@ const totalUsers = computed(() => usersData.value.length);
 
 // 👉 search filters
 const roles = [
+  {
+    title: 'SuperAdmin',
+    value: 'SuperAdmin',
+  },
   {
     title: 'Admin',
     value: 'Admin',
@@ -242,6 +241,7 @@ const resolveActionIconUser = (status: string) => {
 
 const isAddNewUserDrawerVisible = ref(false)
 
+const deleteUserLoading = ref(false);
 const deleteUser = async (id: string) => {
   const user = usersData.value.find(user => user.id === id);
   if (!user) {
@@ -249,8 +249,8 @@ const deleteUser = async (id: string) => {
     snackbar.showSnackbar(snackBarPayload)
     return;
   }
-  user.isLoading = true;
-
+  
+  user.deleteUserLoading = true;
   const functions = getFunctions(); // if you have not retrieved functions already
   const deleteUserFunction = httpsCallable(functions, 'deleteUser');
   try {
@@ -269,7 +269,7 @@ const deleteUser = async (id: string) => {
     const snackBarPayload = { color: "error", message: t("Error while performing deletion. Please contact support desk.") };
     snackbar.showSnackbar(snackBarPayload);
   } finally {
-    user.isLoading = false;
+    user.deleteUserLoading = false;
   }
 };
 
@@ -546,10 +546,9 @@ const widgetData = ref([
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-
           <IconBtn
-            :disabled="item.isLoading"
-            v-if="!item.isLoading"
+            :disabled="item.changeUserStatusLoading"
+            v-if="!item.changeUserStatusLoading"
             @click="changeUserStatusOnClick(item.id, item.status === 'Inactive')"
           >
             <VTooltip
@@ -570,8 +569,8 @@ const widgetData = ref([
             />
           </IconBtn>
           <IconBtn
-            :disabled="item.isLoading"
-            v-if="!item.isLoading"
+            :disabled="item.deleteUserLoading"
+            v-if="!item.deleteUserLoading"
             @click="deleteUser(item.id)">
             <VTooltip
               location="top"
@@ -580,6 +579,15 @@ const widgetData = ref([
               Delete user
             </VTooltip>
             <VIcon icon="tabler-trash" />
+          </IconBtn>
+          <IconBtn
+            v-else
+          >
+            <VProgressCircular
+              :size="20"
+              :width="2"
+              indeterminate
+            />
           </IconBtn>
 
           <IconBtn>
