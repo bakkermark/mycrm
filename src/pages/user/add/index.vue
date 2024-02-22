@@ -181,6 +181,7 @@ onMounted(async () => {
 });
 
 const submittingData = ref(false)
+const snackbarStore = useSnackbarStore();
 
 interface cloudFunctionResponse {
   success: boolean;
@@ -201,7 +202,8 @@ const handleSubmit = async () => {
         const response = result.data as cloudFunctionResponse;
 
         if (!response.success) {
-          throw new Error(response.message);
+          const snackBarPayload = { color: "error", message: t(response.message) }
+          snackbarStore.showSnackbar(snackBarPayload)
         }
 
         const uid = response.returnValue;
@@ -236,14 +238,12 @@ const handleSubmit = async () => {
         if (currentUser) {
           console.log("Current logged-in user after submit: ", currentUser.email);
         }
-
-        const snackbarStore = useSnackbarStore();
+        
         const snackBarPayload = { color: "success", message: t("User has been added successfully.") }
         snackbarStore.showSnackbar(snackBarPayload)
         await router.push({ name: routePushName });
 
       } catch (err) {
-        const snackbarStore = useSnackbarStore();
         const snackBarPayload = { color: "error", message: t("User could not be added. Details: " + err) }
         snackbarStore.showSnackbar(snackBarPayload)
         console.error(err);

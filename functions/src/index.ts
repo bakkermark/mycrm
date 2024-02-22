@@ -161,58 +161,21 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 // --------------------------------------------------------------------------
 // FUNCTION: addUser
 // --------------------------------------------------------------------------
-export const addUser = functions
-  .https.onCall(async (data, context) => {
-    const { email, password } = data
-    try {
-      // Check if the user is authenticated in the client app
-      if (!context.auth) {
-        return {
-          success: false,
-          message: 'User must be authenticated',
-        }
-      }
-
-      // Fetch the role of the user invoking this function
-      const userSnapshot
-        = await admin.firestore().collection('Users').doc(context.auth.uid).get()
-
-      if (!userSnapshot.exists) {
-        return {
-          success: false,
-          message: 'Current user\'s data could not be fetched. Contact support desk.',
-        }
-      }
-
-      const userRole = userSnapshot.data()?.role
-
-      // Check if the user has the 'SuperAdmin' role
-      if (userRole !== 'SuperAdmin') {
-        return {
-          success: false,
-          message: 'Only users authenticated and with role SuperAdmin can add users.',
-        }
-      }
-
-      // Use the Firebase Admin SDK to create a new user
-      const userRecord = await admin.auth().createUser({
-        email,
-        password,
-      })
-
-      // Return the uid of the newly created user along with success message
-      return {
-        success: true,
-        message: 'User has been created successfully',
-        returnValue: userRecord.uid, // Using generic "returnValue" instead of "userId"
-      }
+export const addUser = functions.https.onCall(async (data) => {
+  const { email, password } = data;
+  try {
+    const userRecord = await admin.auth().createUser({ email, password });
+    return {
+      success: true,
+      message: "Successfully created new user.",
+      userId: userRecord.uid
     }
-    catch (error) {
-      console.error('Error creating new user: ', error)
-
-      return {
-        success: false,
-        message: 'An error occurred while creating the user. Contact support desk.',
-      }
+  } catch (error) {
+    // If the email is already in use or the password is not strong enough, Firebase will throw an 'auth/email-already-exists' or 'auth/weak-password' error, respectively.
+    return {
+      success: false,
+      message: "Error creating new user.",
     }
-  })
+  }
+});
+
