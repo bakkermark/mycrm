@@ -204,6 +204,11 @@ const status = [
 
 const resolveUserRoleVariant = (role:string) => {
   const roleLowerCase = role.toLowerCase()
+  if (roleLowerCase === 'superadmin')
+    return {
+      color: 'warning',
+      icon: 'tabler-password-user',
+    }
   if (roleLowerCase === 'admin')
     return {
       color: 'warning',
