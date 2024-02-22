@@ -153,7 +153,6 @@ onMounted(async () => {
   }
   finally {
     isLoading.value = false;
-    console.log(usersData.value); // Log users data on completion
   }
 });
 

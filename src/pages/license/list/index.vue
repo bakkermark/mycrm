@@ -57,14 +57,8 @@ export default {
     const { licenses, error, load } = getLicenses();
 
     load().then(() => {
-      // Check if licenses.value is an instance of Array and then log its length
-      if (licenses.value instanceof Array) {
-        console.log('The number of licenses is: ', licenses.value.length);
-      }
     }).catch((err) => {
-      // You can use the returned error value as well
       console.log('An error occurred: ', err);
-      console.log('Error value from getLicenses: ', error.value);
     });
 
     return { licenses, error };

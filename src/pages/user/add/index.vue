@@ -94,33 +94,14 @@
             </form>
           </VCol>
           <VCol cols="12">
-            <VBtn
-              type="submit"
-              class="me-2"
-            >
+            <VBtn type="submit" class="me-2" :disabled="submittingData">
+              <VProgressCircular v-if="submittingData" :size="20" :width="2" class="mr-2" indeterminate />
               Save
-              <VTooltip
-                open-delay="500"
-                activator="parent"
-                location="top"
-              >
-                Save the user data
-              </VTooltip>
+              <VTooltip open-delay="500" activator="parent" location="top">Save the user data</VTooltip>
             </VBtn>
-
-            <VBtn
-              color="secondary"
-              type="reset"
-              variant="tonal"
-            >
+            <VBtn :disabled="submittingData" color="secondary" type="reset" variant="tonal">
               Reset
-              <VTooltip
-                open-delay="500"
-                activator="parent"
-                location="top"
-              >
-                Reset the form
-              </VTooltip>
+              <VTooltip open-delay="500" activator="parent" location="top">Reset the form</VTooltip>
             </VBtn>
           </VCol>
         </VRow>
@@ -130,7 +111,7 @@
 </template>
 
 <script lang="ts" setup>
-import {ref as vueRef, onMounted} from 'vue';
+import {ref as ref, onMounted} from 'vue';
 import {useRouter} from 'vue-router';
 import {doc, setDoc} from 'firebase/firestore';
 import {ref as fbRef, getDownloadURL, uploadBytes} from '@firebase/storage';
@@ -141,28 +122,29 @@ import type {VForm} from 'vuetify/components';
 import getLicenses from "@/composables/getLicenses";
 import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
+import { getAuth } from "firebase/auth";
 
 const {t} = useI18n();
-const avatarImage = vueRef('/Avatars/14.png')
+const avatarImage = ref('')
 const {licenses, load} = getLicenses();
 const routePushName = 'user-list'
 const firebaseCollectionName = 'Users'
 const router = useRouter();
-const refForm = vueRef<VForm | null>(null);
-const firstName = vueRef('')
-const infix = vueRef('')
-const lastName = vueRef('')
-const email = vueRef('')
-const selectedLicenseHolder = vueRef('')
+const refForm = ref<VForm | null>(null);
+const firstName = ref('')
+const infix = ref('')
+const lastName = ref('')
+const email = ref('')
+const selectedLicenseHolder = ref('')
 const roles = ['Admin', 'Standard User']
-const selectedRole = vueRef('')
-const licenseHolders = vueRef<string[]>([]);
-const selectedPlan = vueRef('Basic')
-const show1 = vueRef(false)
-const show2 = vueRef(true)
-const password = vueRef('')
-const confirmPassword = vueRef('')
-const refInputEl = vueRef()
+const selectedRole = ref('')
+const licenseHolders = ref<string[]>([]);
+const selectedPlan = ref('Basic')
+const show1 = ref(false)
+const show2 = ref(true)
+const password = ref('')
+const confirmPassword = ref('')
+const refInputEl = ref()
 
 const changeAvatar = (file: Event) => {
   const fileReader = new FileReader()
@@ -188,13 +170,21 @@ const rules = {
 onMounted(async () => {
   await load();
   licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
+
+  const authInstance = getAuth();
+  const currentUser = authInstance.currentUser;
+  if (currentUser) {
+    console.log("Current logged-in user before submit: ", currentUser.email);
+  }
 });
 
+const submittingData = ref(false)
 const handleSubmit = async () => {
   if (refForm.value) {
     const validationResult = await refForm.value.validate();
     if (validationResult.valid) {
       try {
+        submittingData.value = true;
         const credential = await createUserWithEmailAndPassword(auth, email.value, password.value);
         const uid = credential.user.uid;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
@@ -221,6 +211,11 @@ const handleSubmit = async () => {
           createdAt: new Date()
         }
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
+        const authInstance = getAuth();
+        const currentUser = authInstance.currentUser;
+        if (currentUser) {
+          console.log("Current logged-in user after submit: ", currentUser.email);
+        }
         const snackbarStore = useSnackbarStore();
         const snackBarPayload = {color: "success", message: t("User has been added successfully.")}
         snackbarStore.showSnackbar(snackBarPayload)
@@ -230,6 +225,9 @@ const handleSubmit = async () => {
         const snackBarPayload = {color: "error", message: t("User could not be added. Details: " + err)}
         snackbarStore.showSnackbar(snackBarPayload)
         console.error(err);
+      }
+      finally {
+        submittingData.value = false;
       }
     }
   }

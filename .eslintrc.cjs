@@ -57,8 +57,8 @@ module.exports = {
     // Enforce camelCase naming convention
     'camelcase': 'error',
 
-    // Disable max-len
-    'max-len': 'off',
+    // Set max length to 120
+    'max-len': ['error', { 'code': 120 }],
 
     // we don't want it
     'semi': ['error', 'never'],
