@@ -195,7 +195,6 @@ const handleSubmit = async () => {
     if (validationResult.valid) {
       try {
         submittingData.value = true;
-
         const functions = getFunctions();
         const addUser = httpsCallable(functions, 'addUser');
         const result = await addUser({ email: email.value, password: password.value });
@@ -204,8 +203,9 @@ const handleSubmit = async () => {
         if (!response.success) {
           const snackBarPayload = { color: "error", message: t(response.message) }
           snackbarStore.showSnackbar(snackBarPayload)
+          return
         }
-
+        
         const uid = response.returnValue;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
         const companyName = companyIdSplit[0];
@@ -214,7 +214,6 @@ const handleSubmit = async () => {
         const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
         const snapshot = await uploadBytes(fileRef, file);
         const avatar = await getDownloadURL(snapshot.ref);
-
         const data = {
           id: uid,
           firstName: firstName.value,
@@ -230,23 +229,14 @@ const handleSubmit = async () => {
           avatar: avatar,
           createdAt: new Date()
         }
-
         await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
-
-        const authInstance = getAuth();
-        const currentUser = authInstance.currentUser;
-        if (currentUser) {
-          console.log("Current logged-in user after submit: ", currentUser.email);
-        }
-        
         const snackBarPayload = { color: "success", message: t("User has been added successfully.") }
         snackbarStore.showSnackbar(snackBarPayload)
         await router.push({ name: routePushName });
-
       } catch (err) {
         const snackBarPayload = { color: "error", message: t("User could not be added. Details: " + err) }
         snackbarStore.showSnackbar(snackBarPayload)
-        console.error(err);
+        console.error("Error: " + err);
       } finally {
         submittingData.value = false;
       }

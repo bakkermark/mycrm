@@ -1,6 +1,6 @@
 {
-  "ChangeUserStatus.Message1": "L'utilisateur est activé avec succès.",
-  "ChangeUserStatus.Message2": "L'utilisateur a été désactivé avec succès.",
+  "User is successfully enabled": "L'utilisateur est activé avec succès.",
+  "User is successfully disabled": "L'utilisateur a été désactivé avec succès.",
   "last login": "Dernière connexion",
   "Home": "Accueil",
   "Contacts": "Contacts",

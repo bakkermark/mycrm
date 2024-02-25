@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
+import {FirebaseError} from '@firebase/util';
 
 admin.initializeApp()
 
@@ -38,59 +39,53 @@ export const getUsers = functions.https.onCall(async () => {
 // --------------------------------------------------------------------------
 export const changeUserStatus
   = functions.https.onCall(async (data, context) => {
-    if (!data) {
-      return {
-        success: false,
-        message:
-          'An error occurred in the application. Contact support desk.',
-      }
-    }
-
-    const { uid, enable } = data
-    const callerUid = context.auth?.uid
-
-    if (!callerUid) {
+    if (!(context.auth && context.auth.uid)) {
       return {
         success: false,
         message: 'You must be logged in to execute this action.',
       }
     }
+    if (!data) {
+        return {
+          success: false,
+          message:
+            'An error occurred in the application. Please contact support desk.',
+        }
+      }
 
-    const callerSnapshot = await db.collection('Users').doc(callerUid).get()
-
-    const callerData = callerSnapshot.data()
-
-    if (!(callerData && ['SuperAdmin', 'Admin'].includes(callerData.role))) {
+    const { uid, enable } = data
+    const userAuth = context.auth?.uid
+    const userSnapshot = await db.collection('Users').doc(userAuth).get()
+    const userData = userSnapshot.data()
+    if (!(userData && ['SuperAdmin', 'Admin'].includes(userData.role))) {
       return {
         success: false,
-        message: 'You do not have the required permissions'
-          + ' to change the status of users',
+        message: 'You do not have the required permissions.',
       }
     }
 
     const targetUserSnapshot = await db.collection('Users').doc(uid).get()
     const targetUserData = targetUserSnapshot.data()
 
-    if (callerData.role === 'Admin' && targetUserData
-      && callerData.licenseCode !== targetUserData.licenseCode) {
+    if (userData.role === 'Admin' && targetUserData
+      && userData.licenseCode !== targetUserData.licenseCode) {
       return {
         success: false,
-        message: 'Admins can only change the status of'
-          + ' users with the same licenseCode',
+        message: 'You do not have the required permissions.',
       }
     }
 
     const newStatus = enable ? 'Active' : 'Inactive'
 
+  //TODO Put in try catch block.
     await admin.auth().updateUser(uid, { disabled: !enable })
     await db.collection('Users').doc(uid).update({ status: newStatus })
 
     let message = 'User status has been changed'
-
     if (newStatus === 'Active')
-      message = 'ChangeUserStatus.Message1'
+      message = 'User is successfully enabled'
     else if (newStatus === 'Inactive')
-      message = 'ChangeUserStatus.Message2'
+      message = 'User is successfully disabled'
 
     return {
       success: true,
@@ -103,7 +98,6 @@ export const changeUserStatus
 // --------------------------------------------------------------------------
 export const deleteUser = functions.https.onCall(async (data, context) => {
   const { uid } = data
-
   if (!(context.auth && context.auth.uid)) {
     return {
       success: false,
@@ -113,31 +107,58 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 
   try {
     const userCollection = db.collection('Users')
-    let docId = ''
+    let userAuthId = ''
     if (context.auth)
-      docId = context.auth.uid
+      userAuthId = context.auth.uid
 
-    const callerSnapshot = await userCollection.doc(docId).get()
-    const callerData = callerSnapshot.data()
-    if (!callerData) {
+    const userAuthSnapshot = await userCollection.doc(userAuthId).get()
+    const userAuthData = userAuthSnapshot.data()
+    if (!userAuthData) {
       return {
         success: false,
-        message: 'You do not have the required permissions'
-          + ' to delete a user. CallerData not available.',
+        message: 'Could not find the user that is loggedin. Please contact support desk.',
       }
     }
-    if (callerData.role !== 'SuperAdmin') {
+    if (userAuthData.role !== 'SuperAdmin') {
       return {
         success: false,
-        message: 'You do not have the required role'
-          + ` to delete a user. Role: ${callerData.role
-          } Uid:${context.auth.uid
-          } Name: ${callerData.fullName}`,
+        message: 'You do not have the required role to delete a user.'
       }
     }
+
+    const userSnapshot = await userCollection.doc(uid).get()
+    const userData = userSnapshot.data()
+    if (!userData) {
+      return {
+        success: false,
+        message: 'User can not be found.',
+      };
+    }
+    
     await admin.auth().deleteUser(uid)
+    console.log("User " + userData.fullName + " deleted from FB Auth.")
     await db.collection('Users').doc(uid).delete()
+    console.log("User " + userData.fullName + " deleted from Users collection.")
 
+    // If avatar doesn't exist, no need for deletion
+    if (!userData.avatar) {
+      return {
+        success: true,
+        message: 'User deleted successfully',
+      };
+    }
+
+    // Extract the file name from the avatar URL
+    let avatarPathUrl = userData.avatar;
+    avatarPathUrl = avatarPathUrl.split('/o/')[1];
+    avatarPathUrl = avatarPathUrl.split('?alt=media')[0];
+    avatarPathUrl = decodeURIComponent(avatarPathUrl);
+    const bucket = admin.storage().bucket();
+
+    // Delete avatar image from Firebase Storage
+    console.log("Avatar " +  avatarPathUrl + " of user " + userData.fullName + " being deleted ...")
+    await bucket.file(avatarPathUrl).delete();
+    
     return {
       success: true,
       message: 'User deleted successfully',
@@ -146,11 +167,9 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
   catch (error) {
     let errorMessage = 'Unexpected error occurred.'
     if (error instanceof Error) {
-      errorMessage
-        = `Error deleting user. Detail: ${
-          error.message}`
+      errorMessage = `Error deleting user. Detail: ${error.message}`
     }
-
+    console.error(errorMessage)
     return {
       success: false,
       message: errorMessage,
@@ -161,21 +180,51 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 // --------------------------------------------------------------------------
 // FUNCTION: addUser
 // --------------------------------------------------------------------------
-export const addUser = functions.https.onCall(async (data) => {
+
+export const addUser = functions.https.onCall(async (data, context) => {
   const { email, password } = data;
+  console.log("Email: " + email)
+  console.log("Password: " + password)
+  console.log("Auth uid: " + context.auth?.uid)
+  if (!(context.auth && context.auth.uid)) {
+    return {
+      success: false,
+      message: 'You must be logged in to execute this action.',
+    };
+  }
   try {
+    let user;
+    try {
+      user = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      const authError = error as FirebaseError;
+      console.error('Email check in Auth: ' + error);
+      if (authError.code !== "auth/user-not-found") {
+        throw authError;
+      }
+    }
+    console.log("User: " + user)
+    if (user) {
+      return {
+        success: false,
+        message: "A user with this email already exists.",
+      };
+    }
     const userRecord = await admin.auth().createUser({ email, password });
     return {
       success: true,
       message: "Successfully created new user.",
-      userId: userRecord.uid
+      returnValue: userRecord.uid
+    };
+  } catch (error: unknown) {
+    console.error("User could not be added. " + error);
+    let errorMsg = "Error creating new user. Unknown error";
+    if (error instanceof Error) {
+      errorMsg = `Error creating new user. ${error.message}`
     }
-  } catch (error) {
-    // If the email is already in use or the password is not strong enough, Firebase will throw an 'auth/email-already-exists' or 'auth/weak-password' error, respectively.
     return {
       success: false,
-      message: "Error creating new user.",
-    }
+      message: errorMsg
+    };
   }
 });
-

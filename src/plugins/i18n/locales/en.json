@@ -1,6 +1,6 @@
 {
-  "ChangeUserStatus.Message1": "User is successfully enabled.",
-  "ChangeUserStatus.Message2": "User is successfully disabled.",
+  "User is successfully enabled": "User is successfully enabled.",
+  "User is successfully disabled": "User is successfully disabled.",
   "last login": "last login",
   "Home": "Home",
   "Contacts": "Contacts",
