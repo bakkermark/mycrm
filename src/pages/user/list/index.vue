@@ -13,7 +13,6 @@ const isLoading = ref(true)
 const snackbar = useSnackbarStore();
 
 // 👉 Store
-const searchQuery = ref('')
 const selectedRole = ref()
 const selectedPlan = ref()
 const selectedStatus = ref()
@@ -155,6 +154,19 @@ onMounted(async () => {
   }
 });
 
+const searchQuery = ref('') // this will track the value of the search input
+const filteredUsers = computed(() => {
+  if (!searchQuery.value) {
+    return usersData.value; // if the search term is empty, return all users
+  } else {
+    // if there is a search term, return the filtered users
+    return usersData.value.filter(user =>
+      user.fullName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      user.company.toLowerCase().includes(searchQuery.value.toLowerCase())
+    );
+  }
+});
 const users = computed(() => usersData.value);
 const totalUsers = computed(() => usersData.value.length);
 
@@ -464,8 +476,8 @@ const widgetData = ref([
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
-        :items="users"
-        :items-length="totalUsers"
+        :items="filteredUsers"
+        :items-length="filteredUsers.length"
         :headers="headers"
         class="text-no-wrap"
         @update:options="updateOptions"
