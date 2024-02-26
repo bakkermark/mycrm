@@ -641,26 +641,23 @@ const widgetData = ref([
             />
             <VMenu activator="parent">
               <VList>
-                <VListItem :to="{ name: 'apps-user-view-id', params: { id: item.id } }">
+                <VListItem :to="{ name: 'user-details-id', params: { id: item.id } }">
                   <template #prepend>
                     <VIcon icon="tabler-eye" />
                   </template>
-
-                  <VListItemTitle>View</VListItemTitle>
+                  <VListItemTitle>Show profile</VListItemTitle>
                 </VListItem>
-
                 <VListItem link="">
                   <template #prepend>
-                    <VIcon icon="tabler-pencil" />
+                    <VIcon icon="tabler-mail" />
                   </template>
-                  <VListItemTitle>Edit</VListItemTitle>
+                  <VListItemTitle>Send email</VListItemTitle>
                 </VListItem>
-
-                <VListItem @click="deleteUser(item.id)">
+                <VListItem @click="">
                   <template #prepend>
-                    <VIcon icon="tabler-trash" />
+                    <VIcon icon="tabler-send" />
                   </template>
-                  <VListItemTitle>Delete</VListItemTitle>
+                  <VListItemTitle>Send password reset</VListItemTitle>
                 </VListItem>
               </VList>
             </VMenu>
