@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
 import { paginationMeta } from '@api-utils/paginationMeta'
@@ -26,6 +26,10 @@ interface Options {
   page: number;
   sortBy: { key: string; order: string }[];
 }
+
+watch(itemsPerPage, () => {
+  page.value = 1;
+});
 const updateOptions = (options: Options) => {
   page.value = options.page;
   sortBy.value = options.sortBy[0]?.key;
@@ -156,18 +160,26 @@ onMounted(async () => {
 
 const searchQuery = ref('') // this will track the value of the search input
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) {
-    return usersData.value; // if the search term is empty, return all users
-  } else {
-    // if there is a search term, return the filtered users
-    return usersData.value.filter(user =>
-      user.fullName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      user.company.toLowerCase().includes(searchQuery.value.toLowerCase())
+  let filtered = usersData.value;
+  if (searchQuery.value || selectedRole.value || selectedPlan.value || selectedStatus.value) {
+    filtered = usersData.value.filter(user =>
+      (user.fullName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        user.company.toLowerCase().includes(searchQuery.value.toLowerCase())) &&
+      (!selectedRole.value || user.role === selectedRole.value) &&
+      (!selectedPlan.value || user.plan === selectedPlan.value) &&
+      (!selectedStatus.value || user.status === selectedStatus.value)
     );
   }
+
+  // Consider the pagination
+  const startIndex = (page.value - 1) * itemsPerPage.value;
+  const endIndex = startIndex + itemsPerPage.value;
+  const pagedFilteredUsers = filtered.slice(startIndex, endIndex);
+
+  return pagedFilteredUsers;
 });
-const users = computed(() => usersData.value);
+
 const totalUsers = computed(() => usersData.value.length);
 
 // 👉 search filters

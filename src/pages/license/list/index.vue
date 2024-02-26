@@ -14,6 +14,9 @@
           {{ $t('company') }}
         </th>
         <th class="text-uppercase">
+          {{ $t('plan') }}
+        </th>
+        <th class="text-uppercase">
           {{ $t('fullname') }}
         </th>
         <th class="text-uppercase">
@@ -32,6 +35,9 @@
       >
         <td>
           {{ item.company }}
+        </td>
+        <td>
+          {{ item.plan }}
         </td>
         <td>
           {{ item.fullName }}
