@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
-import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
-import { paginationMeta } from '@api-utils/paginationMeta'
+import { paginationMeta } from '@/plugins/fake-api/utils/paginationMeta'
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {app} from '@/firebase/config';
 import { useI18n } from 'vue-i18n';
@@ -266,8 +265,6 @@ const resolveActionIconUser = (status: string) => {
   return { color: 'error', icon: 'tabler-user-down' };
 };
 
-const isAddNewUserDrawerVisible = ref(false)
-
 const deleteUser = async (id: string) => {
   const user = usersData.value.find(user => user.id === id);
   if (!user) {
@@ -297,6 +294,12 @@ const deleteUser = async (id: string) => {
   } finally {
     user.deleteUserLoading = false;
   }
+};
+
+
+const router = useRouter();
+const navigateToAddUser = () => {
+  router.push({ name: 'user-add' });
 };
 
 const widgetData = ref([
@@ -475,7 +478,7 @@ const widgetData = ref([
           <!-- 👉 Add user button -->
           <VBtn
             prepend-icon="tabler-plus"
-            @click="isAddNewUserDrawerVisible = true"
+            @click="navigateToAddUser"
           >
             Add New User
           </VBtn>
@@ -704,11 +707,6 @@ const widgetData = ref([
       </VDataTableServer>
       <!-- SECTION -->
     </VCard>
-    <!-- 👉 Add New User -->
-    <AddNewUserDrawer
-      v-model:isDrawerOpen="isAddNewUserDrawerVisible"
-      @user-data="addNewUser"
-    />
   </section>
   <VSnackbar
     v-model="isSnackbarVisible"
