@@ -31,6 +31,7 @@ export const getUsers = functions.https.onCall(async () => {
     }
   }
 
+  console.log("In total " + userList.length.toString() + " user(s) in response.")
   return userList
 })
 
