@@ -3,6 +3,34 @@
     <VCardText class="d-flex">
       <VForm ref="refForm" @submit.prevent="handleSubmit">
         <VRow>
+          <!-- 👉 Upload Photo -->
+          <VCol cols="1" md="1">
+            <!-- 👉 Avatar -->
+            <VAvatar
+              rounded
+              size="100"
+              class="me-6"
+              :image="avatarImage"
+            />
+          </VCol>
+          <VCol cols="12" md="11">
+            <form class="d-flex flex-column justify-center gap-4">
+              <div class="d-flex flex-wrap gap-2">
+                <VBtn color="primary" @click="refInputEl?.click()">
+                  <VIcon icon="tabler-cloud-upload" class="d-sm-none"/>
+                  <span class="d-none d-sm-block">Upload photo</span>
+                </VBtn>
+                <input ref="refInputEl" type="file" name="file" accept=".jpeg,.png,.jpg,GIF" hidden @input="changeAvatar">
+                <VBtn type="reset" color="secondary" variant="tonal" @click="resetAvatar">
+                  <span class="d-none d-sm-block">Reset</span>
+                  <VIcon icon="tabler-refresh" class="d-sm-none"/>
+                </VBtn>
+              </div>
+              <p class="text-body-1 mb-0">
+                Allowed JPG, GIF or PNG. Max size of 800K
+              </p>
+            </form>
+          </VCol>
           <VCol cols="12" md="4">
             <AppTextField v-model="firstName" label="First Name" placeholder="Type in first name ..."
                           :rules="[requiredValidator]"/>
@@ -65,34 +93,7 @@
               require
             />
           </VCol>
-          <VCol cols="1" md="1">
-            <!-- 👉 Avatar -->
-            <VAvatar
-              rounded
-              size="100"
-              class="me-6"
-              :image="avatarImage"
-            />
-          </VCol>
-          <VCol cols="5" md="5">
-            <!-- 👉 Upload Photo -->
-            <form class="d-flex flex-column justify-center gap-4">
-              <div class="d-flex flex-wrap gap-2">
-                <VBtn color="primary" @click="refInputEl?.click()">
-                  <VIcon icon="tabler-cloud-upload" class="d-sm-none"/>
-                  <span class="d-none d-sm-block">Upload photo</span>
-                </VBtn>
-                <input ref="refInputEl" type="file" name="file" accept=".jpeg,.png,.jpg,GIF" hidden @input="changeAvatar">
-                <VBtn type="reset" color="secondary" variant="tonal" @click="resetAvatar">
-                  <span class="d-none d-sm-block">Reset</span>
-                  <VIcon icon="tabler-refresh" class="d-sm-none"/>
-                </VBtn>
-              </div>
-              <p class="text-body-1 mb-0">
-                Allowed JPG, GIF or PNG. Max size of 800K
-              </p>
-            </form>
-          </VCol>
+          
           <VCol cols="12">
             <VBtn type="submit" class="me-2" :disabled="submittingData">
               <VProgressCircular v-if="submittingData" :size="20" :width="2" class="mr-2" indeterminate />
@@ -113,7 +114,7 @@
 <script lang="ts" setup>
 import { ref as ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref as fbRef, getDownloadURL, uploadBytes } from '@firebase/storage';
 import { projectFirestore, projectStorage } from '@/firebase/config';
 import 'firebase/functions';
@@ -121,7 +122,6 @@ import type { VForm } from 'vuetify/components';
 import getLicenses from "@/composables/getLicenses";
 import { useI18n } from 'vue-i18n';
 import { useSnackbarStore } from "@/plugins/pinia/snackbarStore";
-import { getAuth } from "firebase/auth";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
@@ -130,7 +130,6 @@ const {t} = useI18n();
 const avatarImage = ref('')
 const {licenses, load} = getLicenses();
 const routePushName = 'user-list'
-const firebaseCollectionName = 'Users'
 const router = useRouter();
 const refForm = ref<VForm | null>(null);
 const firstName = ref('')
@@ -141,7 +140,6 @@ const selectedLicenseHolder = ref('')
 const roles = ['Admin', 'Standard User']
 const selectedRole = ref('')
 const licenseHolders = ref<string[]>([]);
-const selectedPlan = ref('Basic')
 const show1 = ref(false)
 const show2 = ref(true)
 const password = ref('')
@@ -172,12 +170,6 @@ const rules = {
 onMounted(async () => {
   await load();
   licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
-
-  const authInstance = getAuth();
-  const currentUser = authInstance.currentUser;
-  if (currentUser) {
-    console.log("Current logged-in user before submit: ", currentUser.email);
-  }
 });
 
 const submittingData = ref(false)
@@ -187,6 +179,10 @@ interface cloudFunctionResponse {
   success: boolean;
   message: string;
   returnValue: string;
+}
+
+interface License {
+  plan: string;
 }
 
 const handleSubmit = async () => {
@@ -199,22 +195,30 @@ const handleSubmit = async () => {
         const addUser = httpsCallable(functions, 'addUser');
         const result = await addUser({ email: email.value, password: password.value });
         const response = result.data as cloudFunctionResponse;
-
         if (!response.success) {
-          const snackBarPayload = { color: "error", message: t(response.message) }
-          snackbarStore.showSnackbar(snackBarPayload)
+          snackbarStore.showSnackbar({ color: "error", message: t(response.message) })
           return
         }
-        
         const uid = response.returnValue;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
         const companyName = companyIdSplit[0];
         const licenseId = companyIdSplit[1].replace(')', '');
+        const docRef = doc(projectFirestore, "Licenses", licenseId);
+        console.log("LicenseId: " + licenseId)
+        const docSnap = await getDoc(docRef);
+        let selectedPlan = '';
+        if (docSnap.exists()) {
+          const data = docSnap.data() as License;
+          selectedPlan = data.plan;
+          console.log("Selected Plan: " + selectedPlan)
+        } else {
+          console.error("No such document with id " + licenseId);
+        }
         const file = refInputEl.value?.files[0];
         const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
         const snapshot = await uploadBytes(fileRef, file);
         const avatar = await getDownloadURL(snapshot.ref);
-        const data = {
+        const User = {
           id: uid,
           firstName: firstName.value,
           infix: infix.value,
@@ -225,17 +229,15 @@ const handleSubmit = async () => {
           role: selectedRole.value,
           company: companyName,
           licenseCode: licenseId,
-          plan: selectedPlan.value,
+          plan: selectedPlan,
           avatar: avatar,
           createdAt: new Date()
         }
-        await setDoc(doc(projectFirestore, firebaseCollectionName, uid), data);
-        const snackBarPayload = { color: "success", message: t("User has been added successfully.") }
-        snackbarStore.showSnackbar(snackBarPayload)
+        await setDoc(doc(projectFirestore, "Users", uid), User);
+        snackbarStore.showSnackbar({ color: "success", message: t("User has been added successfully.") })
         await router.push({ name: routePushName });
       } catch (err) {
-        const snackBarPayload = { color: "error", message: t("User could not be added. Details: " + err) }
-        snackbarStore.showSnackbar(snackBarPayload)
+        snackbarStore.showSnackbar({ color: "error", message: t("User could not be added. Details: " + err) })
         console.error("Error: " + err);
       } finally {
         submittingData.value = false;

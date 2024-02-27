@@ -46,6 +46,7 @@ declare module 'vue-router/auto/routes' {
     'license-list': RouteRecordInfo<'license-list', '/license/list', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'relation-add': RouteRecordInfo<'relation-add', '/relation/add', Record<never, never>, Record<never, never>>,
+    'relation-components-user-settings': RouteRecordInfo<'relation-components-user-settings', '/relation/components/UserSettings', Record<never, never>, Record<never, never>>,
     'relation-details-id': RouteRecordInfo<'relation-details-id', '/relation/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'relation-list': RouteRecordInfo<'relation-list', '/relation/list', Record<never, never>, Record<never, never>>,
     'user-add': RouteRecordInfo<'user-add', '/user/add', Record<never, never>, Record<never, never>>,

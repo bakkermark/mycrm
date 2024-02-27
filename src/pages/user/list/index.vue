@@ -6,6 +6,8 @@ import {getFunctions, httpsCallable} from 'firebase/functions';
 import {app} from '@/firebase/config';
 import { useI18n } from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
+import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
+import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
 
 const { t } = useI18n();
 const isLoading = ref(true)
@@ -90,8 +92,7 @@ const changeUserStatus = httpsCallable(functions, 'changeUserStatus');
 const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
   const user = usersData.value.find(user => user.id === uid);
   if (!user) {
-    const snackBarPayload = { color: "error", message: t("No user found with this uid. Please contact support desk.") }
-    snackbar.showSnackbar(snackBarPayload)
+    snackbar.showSnackbar({ color: "error", message: t("No user found with this uid. Please contact support desk.") })
     return;
   }
   user.changeUserStatusLoading = true;
@@ -100,11 +101,9 @@ const changeUserStatusOnClick = async (uid: string, shouldEnable: boolean) => {
   if(response.success) {
     // If operation was successful, update status of the user in the local data
     user.status = shouldEnable ? 'Active' : 'Inactive';
-    const snackBarPayload = { color: "success", message: t(response.message) }
-    snackbar.showSnackbar(snackBarPayload)
+    snackbar.showSnackbar({ color: "success", message: t(response.message) })
   } else {
-    const snackBarPayload = { color: "error", message: t(response.message) }
-    snackbar.showSnackbar(snackBarPayload)
+    snackbar.showSnackbar({ color: "error", message: t(response.message) })
   }
   user.changeUserStatusLoading = false;
 };
@@ -268,8 +267,7 @@ const resolveActionIconUser = (status: string) => {
 const deleteUser = async (id: string) => {
   const user = usersData.value.find(user => user.id === id);
   if (!user) {
-    const snackBarPayload = { color: "error", message: t("No user found with this uid. Please contact support desk.") }
-    snackbar.showSnackbar(snackBarPayload)
+    snackbar.showSnackbar({ color: "error", message: t("No user found with this uid. Please contact support desk.") })
     return;
   }
   
@@ -282,15 +280,12 @@ const deleteUser = async (id: string) => {
     if(response.success) {
       // If operation was successful, remove user from local data
       usersData.value = usersData.value.filter(user => user.id !== id);
-      const snackBarPayload = { color: "success", message: t(response.message) };
-      snackbar.showSnackbar(snackBarPayload);
+      snackbar.showSnackbar({ color: "success", message: t(response.message)});
     } else {
-      const snackBarPayload = { color: "error", message: t(response.message) };
-      snackbar.showSnackbar(snackBarPayload);
+      snackbar.showSnackbar({ color: "error", message: t(response.message) });
     }
   } catch(error) {
-    const snackBarPayload = { color: "error", message: t("Error while performing deletion. Please contact support desk.") };
-    snackbar.showSnackbar(snackBarPayload);
+    snackbar.showSnackbar({ color: "error", message: t("Error while performing deletion. Please contact support desk.")});
   } finally {
     user.deleteUserLoading = false;
   }
