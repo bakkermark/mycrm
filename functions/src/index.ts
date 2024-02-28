@@ -229,3 +229,60 @@ export const addUser = functions.https.onCall(async (data, context) => {
     };
   }
 });
+
+// --------------------------------------------------------------------------
+// FUNCTION: updateUserPassword
+// --------------------------------------------------------------------------
+export const updateUserPassword = functions.https.onCall(async (data, context) => {
+  const { uid, newPassword } = data;
+
+  if (!(context.auth && context.auth.uid)) {
+    return {
+      success: false,
+      message: 'You must be logged in to execute this action.',
+    };
+  }
+
+  const userCollection = db.collection('Users')
+  let userAuthId = ''
+  if (context.auth)
+    userAuthId = context.auth.uid
+
+  let userAuthData;
+  try {
+    const userAuthSnapshot = await userCollection.doc(userAuthId).get()
+    userAuthData = userAuthSnapshot.data();
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return {
+      success: false,
+      message: 'Could not find the user that is loggedin. Please contact support desk.',
+    };
+  }
+
+  if (!userAuthData || userAuthData.role !== 'SuperAdmin') {
+    return {
+      success: false,
+      message: 'You do not have the required role to update a password of a user.'
+    }
+  }
+
+  // Update password in Firebase Auth
+  try {
+    // Update password in Firebase Auth
+    await admin.auth().updateUser(uid, {
+      password: newPassword
+    });
+
+    return {
+      success: true,
+      message: 'Password of user has been updated successfully.'
+    };
+  } catch (error) {
+    console.error('Error updating password:', error);
+    return {
+      success: false,
+      message: 'An error occurred while updating the password. Details: ' + error
+    };
+  }
+});

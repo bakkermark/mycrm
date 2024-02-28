@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import laptopGirl from '@images/illustrations/laptop-girl.png'
-import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
-import UserLogins from "@/pages/user/components/UserLogins.vue";
+import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue"
 import { ref, computed } from 'vue';
+import { defineProps } from 'vue'
 import type {VForm} from "vuetify/components";
+import UserLogins from "@/pages/user/components/UserLogins.vue";
+import 'firebase/functions';
+import {getFunctions, httpsCallable} from 'firebase/functions';
 
+const functions = getFunctions();
+const uid = ref<string | null>(null);
+// Define props
+const props = defineProps({
+  uid: String
+})
 const submittingData = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -27,11 +36,38 @@ const passwordsMatch = computed(() => {
   return (value: string) => value === password.value || 'Passwords do not match';
 });
 
+interface cloudFunctionResponse {
+  success: boolean;
+  message: string;
+  returnValue?: string;
+}
+
 const handleSubmit = async () => {
-  if (refForm.value) {
-    const validationResult = await refForm.value.validate();
-    if (validationResult.valid) {
-      console.log("Moi man het werkt")
+  if (refForm.value) { // Check if form has a value.
+    const validationResult = await refForm.value.validate(); // Validating the form entries.
+    if (validationResult.valid) { // If form is valid.
+      submittingData.value = true; // Start the submission process.
+      const functions = getFunctions(); // Get a reference to the Cloud Functions instance.
+      console.log("updating password for uid: " + props.uid) // Logging uid for which the password is updated.
+      const updateUserPassword = httpsCallable(functions, 'updateUserPassword'); // Creating a function reference for 'updateUserPassword' function in the Cloud Functions service.
+      updateUserPassword({ uid: props.uid, newPassword: password.value }) // Calling the function with provided parameters.
+        .then((result) => { // If function is successfully completed.
+          const data = result.data as cloudFunctionResponse;
+          if (!data.success) {
+            // Show error message using your preferred method
+            console.log("Error: " + data.message);
+          } else {
+            // Show success message using your preferred method
+            console.log("Password updated successfully.");
+          }
+          submittingData.value = false; // End the submission process.
+        })
+        .catch((error) => { // If there's an error while executing the function.
+          submittingData.value = false; // End the submission process.
+          // Handle any errors
+          console.error("An error occurred:", error);
+          // Show error message using your preferred method
+        });
     }
   }
 }

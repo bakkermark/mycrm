@@ -1,24 +1,23 @@
 <script setup lang="ts">
 import type {VForm} from "vuetify/components";
-import {ref as ref, onMounted} from 'vue';
+import {ref as ref, onMounted, defineEmits} from 'vue';
 import {useRouter} from 'vue-router';
 import {doc, setDoc, getDoc} from 'firebase/firestore';
 import {ref as fbRef, getDownloadURL, uploadBytes} from '@firebase/storage';
 import {projectFirestore, projectStorage} from '@/firebase/config';
-import 'firebase/functions';
 import getLicenses from "@/composables/getLicenses";
 import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
+import 'firebase/functions';
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import { v4 as uuidv4 } from 'uuid';
 
+const emit = defineEmits(['userUpdated']);
 const {t} = useI18n();
 const avatarImage = ref('')
 const {licenses, load} = getLicenses();
-const routePushName = 'user-list'
-const router = useRouter();
 const refForm = ref<VForm | null>(null);
 const firstName = ref('')
 const infix = ref('')
@@ -73,6 +72,7 @@ const handleSubmit = async () => {
     const validationResult = await refForm.value.validate();
     if (validationResult.valid) {
       try {
+        // Try to add user to Firebase Auth
         submittingData.value = true;
         const functions = getFunctions();
         const addUser = httpsCallable(functions, 'addUser');
@@ -82,25 +82,32 @@ const handleSubmit = async () => {
           snackbarStore.showSnackbar({color: "error", message: t(response.message)})
           return
         }
+        
+        // If user is added to Firebase Auth
         const uid = response.returnValue;
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
         const companyName = companyIdSplit[0];
         const licenseId = companyIdSplit[1].replace(')', '');
         const docRef = doc(projectFirestore, "Licenses", licenseId);
-        console.log("LicenseId: " + licenseId)
         const docSnap = await getDoc(docRef);
         let selectedPlan = '';
         if (docSnap.exists()) {
           const data = docSnap.data() as License;
           selectedPlan = data.plan;
-          console.log("Selected Plan: " + selectedPlan)
         } else {
           console.error("No such document with id " + licenseId);
         }
+        
+        // Add avatar of user Firebase Storage
         const file = refInputEl.value?.files[0];
-        const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
-        const snapshot = await uploadBytes(fileRef, file);
-        const avatar = await getDownloadURL(snapshot.ref);
+        let avatar = ''
+        if (file) {
+          const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
+          const snapshot = await uploadBytes(fileRef, file);
+          avatar = await getDownloadURL(snapshot.ref);
+        }
+        
+        // Add user to FireStore collection Users
         const User = {
           id: uid,
           firstName: firstName.value,
@@ -117,8 +124,8 @@ const handleSubmit = async () => {
           createdAt: new Date()
         }
         await setDoc(doc(projectFirestore, "Users", uid), User);
+        emit('userUpdated', uid); // Emit an event with the uid
         snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")})
-        await router.push({name: routePushName});
       } catch (err) {
         snackbarStore.showSnackbar({color: "error", message: t("User could not be added. Details: " + err)})
         console.error("Error: " + err);

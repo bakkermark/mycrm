@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
 const recentDevicesHeaders = [
