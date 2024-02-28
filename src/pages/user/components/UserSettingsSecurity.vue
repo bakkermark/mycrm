@@ -6,14 +6,18 @@ import { defineProps } from 'vue'
 import type {VForm} from "vuetify/components";
 import UserLogins from "@/pages/user/components/UserLogins.vue";
 import 'firebase/functions';
+import {useI18n} from 'vue-i18n';
 import {getFunctions, httpsCallable} from 'firebase/functions';
+import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 
+const {t} = useI18n();
 const functions = getFunctions();
 const uid = ref<string | null>(null);
 // Define props
 const props = defineProps({
   uid: String
 })
+const snackbarStore = useSnackbarStore();
 const submittingData = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
@@ -54,19 +58,18 @@ const handleSubmit = async () => {
         .then((result) => { // If function is successfully completed.
           const data = result.data as cloudFunctionResponse;
           if (!data.success) {
-            // Show error message using your preferred method
-            console.log("Error: " + data.message);
+            // Show error message
+            snackbarStore.showSnackbar({color: 'success', message: t(data.message)})
           } else {
-            // Show success message using your preferred method
-            console.log("Password updated successfully.");
+            // Show success message
+            snackbarStore.showSnackbar({color: "success", message: t('Password has been changed successfully.')})
           }
           submittingData.value = false; // End the submission process.
         })
         .catch((error) => { // If there's an error while executing the function.
           submittingData.value = false; // End the submission process.
-          // Handle any errors
-          console.error("An error occurred:", error);
-          // Show error message using your preferred method
+          // Show error message
+          snackbarStore.showSnackbar({color: 'error', message: t('An error occured. Password did not changed.')})
         });
     }
   }
