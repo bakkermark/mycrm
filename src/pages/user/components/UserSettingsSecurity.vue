@@ -67,6 +67,7 @@ const handleSubmit = async () => {
           submittingData.value = false; // End the submission process.
         })
         .catch((error) => { // If there's an error while executing the function.
+          console.log(error)
           submittingData.value = false; // End the submission process.
           // Show error message
           snackbarStore.showSnackbar({color: 'error', message: t('An error occured. Password did not changed.')})
