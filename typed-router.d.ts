@@ -50,6 +50,8 @@ declare module 'vue-router/auto/routes' {
     'relation-details-id': RouteRecordInfo<'relation-details-id', '/relation/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'relation-list': RouteRecordInfo<'relation-list', '/relation/list', Record<never, never>, Record<never, never>>,
     'user-add': RouteRecordInfo<'user-add', '/user/add', Record<never, never>, Record<never, never>>,
+    'user-components-user-logins': RouteRecordInfo<'user-components-user-logins', '/user/components/UserLogins', Record<never, never>, Record<never, never>>,
+    'user-components-user-settings-security': RouteRecordInfo<'user-components-user-settings-security', '/user/components/UserSettingsSecurity', Record<never, never>, Record<never, never>>,
     'user-details-id': RouteRecordInfo<'user-details-id', '/user/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'user-list': RouteRecordInfo<'user-list', '/user/list', Record<never, never>, Record<never, never>>,
   }
