@@ -5,14 +5,12 @@ import { ref, computed } from 'vue';
 import { defineProps } from 'vue'
 import type {VForm} from "vuetify/components";
 import UserLogins from "@/pages/user/components/UserLogins.vue";
-import 'firebase/functions';
 import {useI18n} from 'vue-i18n';
+import 'firebase/functions';
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 
 const {t} = useI18n();
-const functions = getFunctions();
-const uid = ref<string | null>(null);
 // Define props
 const props = defineProps({
   uid: String
