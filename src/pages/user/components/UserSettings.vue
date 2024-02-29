@@ -12,7 +12,6 @@ import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import { v4 as uuidv4 } from 'uuid';
 import 'firebase/functions';
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import {em} from "@fullcalendar/core/internal-common";
 
 const emit = defineEmits(['userUpdated']);
 const {t} = useI18n();
@@ -130,43 +129,6 @@ const handleSubmit = async () => {
         snackbarStore.showSnackbar({color: "error", message: t("User could not be added. Details: " + err)})
         console.error("Error: " + err);
       } finally {
-        // Create a reference to the 'sendEmail' Cloud Function
-        const functions = getFunctions(); // Get a reference to the Cloud Functions instance.
-        const sendEmail = httpsCallable(functions, 'sendEmailTemplate');
-
-        // Define the custom fields data
-        const variablesData = [
-          {
-            email: email.value,
-            substitutions: [
-              {
-                var: 'firstName',
-                value: firstName.value
-              },
-              {
-                var: 'action_url',
-                value: 'https://dev-mycrm.web.app/login'
-              }
-            ],
-          }
-        ];
-        
-        // Define the email data
-        const emailData = {
-          toEmail: email.value,
-          fromEmail: 'info@multimediamarkers.com',
-          subject: 'Activeer je myCRM account',
-          templateId: 'jy7zpl9jr2pg5vx6',
-          variables: variablesData
-        };
-
-        // Call the function and handle the response
-        try {
-          const result = await sendEmail(emailData);
-          snackbarStore.showSnackbar({color: "success", message: t("Email sent to user.")})
-        } catch (error) {
-          snackbarStore.showSnackbar({color: "success", message: t("Email could not be sent to user. Details: " + error)})
-        }
         submittingData.value = false;
       }
     }

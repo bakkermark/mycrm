@@ -3,7 +3,6 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { paginationMeta } from '@/plugins/fake-api/utils/paginationMeta'
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import {app} from '@/firebase/config';
 import { useI18n } from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";

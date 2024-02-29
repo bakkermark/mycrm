@@ -1,12 +1,10 @@
-// Firebase configuration
-import { initializeApp } from "firebase/app"
-import { getAnalytics } from "firebase/analytics"
-import { getFirestore } from "firebase/firestore"
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 import { getAuth, Auth, setPersistence, browserSessionPersistence } from "firebase/auth";
-import { FieldValue } from "@firebase/firestore"
 import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 
-// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBBuQ2YUp05ClALuSpg_8zxIEQCVyvC-tQ",
   authDomain: "dev-mycrm.firebaseapp.com",
@@ -15,16 +13,15 @@ const firebaseConfig = {
   messagingSenderId: "935411313031",
   appId: "1:935411313031:web:9c28fbd6e7e5e7fa300b22",
   measurementId: "G-WT7D0J0JH9"
-}
+};
 
-// Initialize Firebase app
-const app = initializeApp(firebaseConfig)
-const projectStorage = getStorage(app);
-
-// Firebase services
-const auth: Auth = getAuth(app)
-const projectFirestore = getFirestore(app)
-const analytics = getAnalytics(app)
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const analytics = getAnalytics(firebaseApp);
+const projectFirestore = getFirestore(firebaseApp);
+const auth: Auth = getAuth(firebaseApp);
+const projectStorage = getStorage(firebaseApp);
+const functions = getFunctions(firebaseApp);
 
 setPersistence(auth, browserSessionPersistence)
   .then(() => {
@@ -34,5 +31,4 @@ setPersistence(auth, browserSessionPersistence)
     console.error("Could not set firebase auth state persistence: ", error)
   })
 
-// Export Firebase services
-export { auth, projectFirestore, projectStorage, analytics, FieldValue, app };
+export { firebaseApp, analytics, projectFirestore, auth, projectStorage, functions };

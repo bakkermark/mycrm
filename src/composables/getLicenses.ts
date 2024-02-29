@@ -25,15 +25,6 @@ const getLicenses = () => {
         if (!docData) return {id: '', Code: '', Company: ''} as Data;
         return { ...docData, id: doc.id, company: docData.company } as Data;
       });
-
-      // Log the count of records in licenses
-      //console.log(`Retrieved ${licenses.value.length} records.`);
-
-      // Log the Company field for each record in licenses
-      //licenses.value.forEach((record, index) => {
-      //  console.log(`Record ${index + 1} Company: ${record.Company}`);
-      //});
-
     } catch (err) {
       error.value = (err as Error).message;
       console.log(`Error fetching data: ${error.value}`);

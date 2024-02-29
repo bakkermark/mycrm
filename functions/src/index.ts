@@ -313,10 +313,8 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
   const emailParams = new EmailParams()
     .setFrom(sentFrom)
     .setTo(recipients)
-    .setReplyTo(sentFrom)
     .setSubject(data.subject)
-    .setHtml(data.htmlContent)
-    .setText(data.textContent);
+    .setHtml(data.html)
 
   try {
     console.log("Trying to send email")
@@ -325,7 +323,7 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
     return { success: true, message: 'Email sent successfully.' };
   } catch (error) {
     console.error('Error sending email:', error);
-    return { success: true, message: 'Email sent not successfully. Details: ' + error };
+    return { success: false, message: 'Email sent not successfully. Details: ' + error };
   }
 });
 // --------------------------------------------------------------------------
@@ -365,6 +363,6 @@ export const sendEmailTemplate = functions.https.onCall(async (data, context) =>
     return { success: true, message: 'Email sent successfully.' };
   } catch (error) {
     console.error('Error sending email:', error);
-    return { success: true, message: 'Email sent not successfully. Details: ' + error };
+    return { success: false, message: 'Email sent not successfully. Details: ' + error };
   }
 });
