@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { sendTemplateEmail } from '@/utils/emailService/emailService'
-import { User, TemplateEmailData } from '@/utils/emailService/emailTypes'
+import { User, EmailInputData } from '@/utils/emailService/emailTypes'
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore"
 import {useI18n} from 'vue-i18n'
 
@@ -32,7 +32,7 @@ async function triggerEmail() {
     plan: "Platinum",
   }
 
-  const emailData: TemplateEmailData = {
+  const emailData: EmailInputData = {
     templateName: "user_activation",
     licenseCode: '99999999',
     user,

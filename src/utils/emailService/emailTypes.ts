@@ -1,25 +1,41 @@
 // EmailTypes.ts
-
-// Interface for user information
-export interface User {
-  id: string;
-  firstName: string;
-  infix?: string; // Optional, not all users may have this
-  lastName: string;
-  fullName: string;
-  email: string;
-  role: "Standard User" | "Admin" | "SuperAdmin";
-  status: "Inactive" | "Active";
-  avatar?: string;
-  createdAt: Date;
-  company: string;
-  licenseCode: string;
-  plan: string;
-}
+import { User } from '@/composables/users/userType'
 
 // Interface for sending an email using a template
-export interface TemplateEmailData {
+export interface EmailInputData {
   templateName: string;
   licenseCode: string;
   user: User; // Use the User interface to specify which user to send the email to
+}
+
+// Data structure of the EmailTemplate
+export interface EmailTemplate {
+  subject: string;
+  htmlTemplate: string;
+  createdAt: Date,
+  description: string,
+  licenseCode: string,
+  templateGroup: string,
+  templateName: string,
+  updatedAt: Date,
+  templateType: string,
+  createdBy: string,
+  updatedBy: string,
+  lastEmailSent: Date,
+  fromEmail: string,
+  fromEmailName: string,
+  replyEmail: string,
+  replyEmailName: string
+}
+
+// Data structure that is used in the cloud function SendEmail.
+export interface EmailData {
+  fromEmail: string;
+  fromEmailName: string;
+  toEmail: string;
+  toEmailName: string;
+  replyEmail: string;
+  replyEmailName: string;
+  subject: string;
+  html: string;
 }

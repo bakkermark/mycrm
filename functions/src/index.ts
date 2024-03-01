@@ -291,73 +291,39 @@ export const updateUserPassword = functions.https.onCall(async (data, context) =
 // FUNCTION: sendEmail
 // --------------------------------------------------------------------------
 import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
+import { EmailData } from '../../src/utils/emailService/emailTypes';
 
-export const sendEmail = functions.https.onCall(async (data, context) => {
+export const sendEmail = functions.https.onCall(async (data: EmailData, context) => {
   // Ensure the user is authenticated
   if (!context.auth) {
-    console.log("User is not authenticated to send email.")
+    console.log("User is not authenticated to send email." + context.auth)
+    return {
+      success: false,
+      message: 'You must be logged in to execute this action.',
+    };
   }
-  else {
-    console.log("User is authenticated to send email.")
-  }
-
+  
   // Assuming the MailerSend API key is stored in Firebase environment configuration
   const mailerSend = new MailerSend({
     apiKey: 'mlsn.02eb112fae569c21f9611c32d3f0affaa30f83ed5add050ad44e0f7f4f8dab03' //functions.config().mailersend.apikey,
   });
 
   console.log("New MailerSend object created")
-  const sentFrom = new Sender(data.fromEmail, data.fromName);
-  const recipients = [new Recipient(data.toEmail, data.toName)];
+  const sentFrom = new Sender(data.fromEmail, data.fromEmailName);
+  const recipients = [new Recipient(data.toEmail, data.toEmailName)];
+  const replyAddress = new Recipient(data.replyEmail, data.replyEmailName)
 
   const emailParams = new EmailParams()
     .setFrom(sentFrom)
     .setTo(recipients)
     .setSubject(data.subject)
     .setHtml(data.html)
+    .setReplyTo(replyAddress)
 
   try {
-    console.log("Trying to send email")
-    await mailerSend.email.send(emailParams);
-    console.log('Email sent successfully');
-    return { success: true, message: 'Email sent successfully.' };
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return { success: false, message: 'Email sent not successfully. Details: ' + error };
-  }
-});
-// --------------------------------------------------------------------------
-// FUNCTION: sendEmailTemplate
-// --------------------------------------------------------------------------
-export const sendEmailTemplate = functions.https.onCall(async (data, context) => {
-  // Ensure the user is authenticated
-  if (!context.auth) {
-    console.log("User is not authenticated to send email.")
-  }
-  else {
-    console.log("User is authenticated to send email template.")
-  }
-
-  // Assuming the MailerSend API key is stored in Firebase environment configuration
-  const mailerSend = new MailerSend({
-    apiKey: 'mlsn.02eb112fae569c21f9611c32d3f0affaa30f83ed5add050ad44e0f7f4f8dab03' //functions.config().mailersend.apikey,
-  });
-
-  console.log("New MailerSend object created")
-  const sentFrom = new Sender(data.fromEmail, data.fromName);
-  const recipients = [new Recipient(data.toEmail, data.toName)];
-  
-  const emailParams = new EmailParams()
-    .setFrom(sentFrom)
-    .setTo(recipients)
-    .setReplyTo(sentFrom)
-    .setSubject(data.subject)
-    .setTemplateId(data.templateId)
-    .setVariables(data.variables)
-
-  try {
-    console.log("Trying to send email")
-    console.log("Used variables: " + data.variables)
+    console.log('Trying to send email')
+    console.log('Reply info: ' + data.replyEmail, data.replyEmailName)
+    console.log('From info: ' + data.fromEmail, data.fromEmailName)
     await mailerSend.email.send(emailParams);
     console.log('Email sent successfully');
     return { success: true, message: 'Email sent successfully.' };
