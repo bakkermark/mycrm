@@ -317,7 +317,7 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
       const result = await mailerSend.email.send(emailParams);
       const messageId = result.headers['x-message-id'];
       //TODO EmailsSend should be subcollection of licenses. Every license has own archive.
-      const documentRef = db.collection('EmailsSend').doc(messageId);
+      const documentRef = db.collection('EmailArchive').doc(messageId);
       await documentRef.set({
         messageId: messageId,
         fromEmail: data.fromEmail,
