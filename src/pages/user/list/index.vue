@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
+import { functions } from '@/firebase/config';
 
 const { t } = useI18n();
 const isLoading = ref(true)
@@ -125,7 +126,6 @@ interface User {
 }
 const usersData = ref<User[]>([]);
 onMounted(async () => {
-  const functions = getFunctions(app);
   const getUsers = httpsCallable(functions, 'getUsers');
 
   try {
