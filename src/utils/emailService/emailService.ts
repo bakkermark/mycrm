@@ -121,21 +121,29 @@ export const sendTemplateEmail = async (emailData: TemplateEmailData): Promise<{
   // Define the email data
   const emailDataToSend = {
     toEmail: emailData.user.email,
+    toEmailName: emailData.user.fullName,
     fromEmail: 'info@multimediamarkers.com',
+    fromEmailName: 'MultiMediaMarkers | Augmented Reality Apps',
     subject: emailTemplate.subject,
     html: htmlUpdated
   };
 
-  // Call the function and handle the response
+  interface ApiResponse {
+    success: boolean;
+    message: string;
+    returnValue?: string
+  }
+
   try {
     const result = await sendEmail(emailDataToSend);
-    if (result) {
-      return {success: true, message: 'Email sent successfully.'};
+    const data = result.data as ApiResponse;
+    if (data.success) {
+      return {success: true, message: data.message };
     }
     else {
-      return {success: false, message: 'Email could not be sent. Details: ' + JSON.stringify(result)};
+      return {success: false, message: data.message};
     }
   } catch (error) {
-    return { success: false, message: 'Email could not be sent by other error. Details: ' + error };
+    return { success: false, message: 'Email could not be sent due to an error. Details: ' + error };
   }
 };

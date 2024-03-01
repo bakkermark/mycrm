@@ -40,11 +40,10 @@ async function triggerEmail() {
 
   try {
     const result = await sendTemplateEmail(emailData)
-    console.log("Result: ", result)
     if (result.success) {
-      snackbarStore.showSnackbar({ color: "success", message: t("Email sent succesfully.") })
+      snackbarStore.showSnackbar({ color: "success", message: t(result.message) })
     } else {
-      snackbarStore.showSnackbar({ color: "error", message: t("Email could not be sent.") })
+      snackbarStore.showSnackbar({ color: "error", message: t(result.message) })
     }
   } catch (error: any) {
     snackbarStore.showSnackbar({ color: "error", message: t(`Error occurred during sending email. Details: ${error.message}`) })
