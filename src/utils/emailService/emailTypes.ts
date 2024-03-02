@@ -1,5 +1,5 @@
 // EmailTypes.ts
-import {User} from '@/composables/users/userType'
+import {User} from '@/types/userType'
 import {License} from "@/pages/license/licenseTypes";
 
 // Interface for sending an email using a template

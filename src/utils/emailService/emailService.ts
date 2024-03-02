@@ -1,27 +1,21 @@
 // Import the necessary modules and functions object from your Firebase config
 import {EmailInputData, EmailTemplate} from './emailTypes';
 import { httpsCallable } from 'firebase/functions';
-import { collection, where, query, getDocs } from "firebase/firestore";
-import { projectFirestore as firestore , functions } from '@/firebase/config';
+import {functions } from '@/firebase/config';
 import {replaceVariablesInTemplate} from "@/utils/emailService/emailUtils";
+import getEmailTemplate from './../../composables/emailTemplate/getEmailTemplate'
 
 export const sendTemplateEmail = async (emailData: EmailInputData): Promise<{ success: boolean, message: string }> => {
 
   const sendEmail = httpsCallable(functions, 'sendEmail');
-  async function fetchEmailTemplate(templateName: string, licenseCode: string) {
-    const q = query(collection(firestore, 'EmailTemplates'), where('templateName', '==', templateName), where('licenseCode', '==', licenseCode));
-
-    const querySnapshot = await getDocs(q);
-
-    if(!querySnapshot.empty) {
-      return querySnapshot.docs[0].data() as EmailTemplate;
-    }
-    return null;
+  
+  const { template, error, load } = getEmailTemplate(emailData.templateName, emailData.licenseCode);
+  await load();
+  const emailTemplate = template.value;
+  if (error.value) {
+    return {success: false, message: `Could not find correct email template due to error: ${error.value}. Please contact support.`};
   }
-
-  const emailTemplate = await fetchEmailTemplate(emailData.templateName, emailData.licenseCode);
-  if (!emailTemplate)
-  {
+  if (!emailTemplate) {
     return { success: false, message: 'Could not find correct email template. Please contact support.' };
   }
   

@@ -10,7 +10,8 @@
 
 <script setup lang="ts">
 import { sendTemplateEmail } from '@/utils/emailService/emailService'
-import { User, EmailInputData } from '@/utils/emailService/emailTypes'
+import { EmailInputData } from '@/utils/emailService/emailTypes'
+import {User} from '@/types/userType'
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore"
 import {useI18n} from 'vue-i18n'
 import {License} from "@/pages/license/licenseTypes";

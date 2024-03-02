@@ -1,7 +1,7 @@
 import { Ref, ref } from 'vue';
 import { projectFirestore } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { EmailTemplate } from './emailTemplateType';
+import { EmailTemplate } from '@/types/emailTemplateType';
 
 const getEmailTemplate = (templateName: string, licenseCode: string) => {
   const firebaseCollectionName = "EmailTemplates"
