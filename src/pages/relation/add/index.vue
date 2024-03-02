@@ -13,6 +13,7 @@ import { sendTemplateEmail } from '@/utils/emailService/emailService'
 import { User, EmailInputData } from '@/utils/emailService/emailTypes'
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore"
 import {useI18n} from 'vue-i18n'
+import {License} from "@/pages/license/licenseTypes";
 
 const { t } = useI18n()
 const snackbarStore = useSnackbarStore()
@@ -32,10 +33,21 @@ async function triggerEmail() {
     plan: "Platinum",
   }
 
+  const license: License = {
+    company: "MultiMediaMarkers",
+    email: "bakker.mark@outlook.com",
+    firstName: "Mark",
+    fullName: "Mark Bakker",
+    infix: '',
+    lastName: "Bakker",
+    plan: "Platinum",
+  }
+
   const emailData: EmailInputData = {
     templateName: "user_activation",
     licenseCode: '99999999',
     user,
+    license
   }
 
   try {

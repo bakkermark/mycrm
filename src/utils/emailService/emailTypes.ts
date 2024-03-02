@@ -1,11 +1,13 @@
 // EmailTypes.ts
-import { User } from '@/composables/users/userType'
+import {User} from '@/composables/users/userType'
+import {License} from "@/pages/license/licenseTypes";
 
 // Interface for sending an email using a template
 export interface EmailInputData {
   templateName: string;
   licenseCode: string;
-  user: User; // Use the User interface to specify which user to send the email to
+  user: User;
+  license: License;
 }
 
 // Data structure of the EmailTemplate

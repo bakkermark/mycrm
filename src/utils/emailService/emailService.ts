@@ -1,32 +1,24 @@
 // Import the necessary modules and functions object from your Firebase config
-import { TemplateEmailData } from './emailTypes';
+import {EmailInputData, EmailTemplate} from './emailTypes';
 import { httpsCallable } from 'firebase/functions';
 import { collection, where, query, getDocs } from "firebase/firestore";
 import { projectFirestore as firestore , functions } from '@/firebase/config';
+import {replaceVariablesInTemplate} from "@/utils/emailService/emailUtils";
 
-export const sendTemplateEmail = async (emailData: TemplateEmailData): Promise<{ success: boolean, message: string }> => {
+export const sendTemplateEmail = async (emailData: EmailInputData): Promise<{ success: boolean, message: string }> => {
 
   const sendEmail = httpsCallable(functions, 'sendEmail');
   async function fetchEmailTemplate(templateName: string, licenseCode: string) {
-    const q = query(collection(firestore, 'EmailTemplates'), where('templateName', '==', templateName));
+    const q = query(collection(firestore, 'EmailTemplates'), where('templateName', '==', templateName), where('licenseCode', '==', licenseCode));
 
     const querySnapshot = await getDocs(q);
 
     if(!querySnapshot.empty) {
-      return querySnapshot.docs[0].data();
+      return querySnapshot.docs[0].data() as EmailTemplate;
     }
     return null;
   }
 
-  function replaceVariablesInTemplate(htmlTemplate: string, variablesData: any[]) {
-    let processedTemplate = htmlTemplate;
-    variablesData.forEach(substitution => {
-      const regex = new RegExp(`{\\$${substitution.var}}`, 'g');
-      processedTemplate = processedTemplate.replace(regex, substitution.value);
-    });
-    return processedTemplate;
-  }
-  
   const emailTemplate = await fetchEmailTemplate(emailData.templateName, emailData.licenseCode);
   if (!emailTemplate)
   {
@@ -115,7 +107,7 @@ export const sendTemplateEmail = async (emailData: TemplateEmailData): Promise<{
       value: 'https://dev-mycrm.web.app/login'
     }
   ]
-
+  
   const htmlUpdated = replaceVariablesInTemplate(emailTemplate.htmlTemplate, variablesData);
   
   // Define the email data

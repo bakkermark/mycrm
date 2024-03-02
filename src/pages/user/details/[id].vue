@@ -26,23 +26,7 @@ import { ref, onMounted } from 'vue';
 import { projectFirestore } from '@/firebase/config';
 import { useRoute } from 'vue-router';
 import { doc, getDoc } from 'firebase/firestore';
-
-// Define the User interface
-interface User {
-  id: string;
-  firstName: string;
-  infix?: string;
-  lastName: string;
-  fullName: string;
-  email: string;
-  role: string;
-  status: string;
-  avatar?: string;
-  createdAt: { seconds: number; nanoseconds: number };
-  company: string;
-  licenseCode: string;
-  plan: string;
-}
+import { User } from './../userTypes'
 
 const route = useRoute();
 const userId = route.params.id.toString(); // Ensure userId is of type string
