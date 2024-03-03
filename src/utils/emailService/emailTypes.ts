@@ -3,11 +3,10 @@ import {User} from '@/types/userType'
 import {License} from "@/pages/license/licenseTypes";
 
 // Interface for sending an email using a template
-export interface EmailInputData {
+export interface emailServiceInputData {
   templateName: string;
-  licenseCode: string;
-  user: User;
-  license: License;
+  user?: User;
+  license?: License;
 }
 
 // Data structure that is used in the cloud function SendEmail.

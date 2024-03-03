@@ -4,6 +4,7 @@ export interface License {
   firstName: string,
   fullName: string,
   infix?: string,
+  id: string,
   lastName: string,
   plan: string
 }

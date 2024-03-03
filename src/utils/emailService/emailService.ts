@@ -1,14 +1,37 @@
-import { EmailInputData } from './emailTypes';
+import {emailServiceInputData} from './emailTypes';
 import getEmailTemplate from './../../composables/emailTemplate/getEmailTemplate';
-import { replaceVariablesInTemplate } from "@/utils/emailService/emailUtils";
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/firebase/config';
+import {replaceVariablesInTemplate } from "@/utils/emailService/emailUtils";
+import {httpsCallable} from 'firebase/functions';
+import {functions} from '@/firebase/config';
 import {ApiResponse} from "@/types/apiResponseType";
+import getUser from "@/composables/user/getUser";
+import getLicense from "@/composables/license/getLicense";
+import {User} from '@/types/userType'
+import {License} from '@/types/licenseType'
 
-export const sendTemplateEmail = async (emailData: EmailInputData): Promise<{ success: boolean, message: string }> => {
+export const sendTemplateEmail = async (emailData: emailServiceInputData): Promise<{ success: boolean, message: string }> => {
   try {
+    // Retrieve user data
+    const userId = ''+emailData.user?.id
+    const userResponse = await getUser(userId);
+    const user = userResponse.returnObject as User
+    if (!userResponse.success)    {
+      // If not successful, return an error message
+      return { success: false, message: userResponse.message}
+    }
+    
+    // Retrieve license data
+    const licenseId = ''+emailData.license?.id;
+    const licenseResponse = await getLicense(licenseId);
+    const license = licenseResponse.returnObject as License
+    if (!licenseResponse.success)    {
+      // If not successful, return an error message
+      return { success: false, message: userResponse.message}
+    }
+
     // Retrieve the email template
-    const templateResponse = await getEmailTemplate(emailData.templateName, emailData.licenseCode);
+    const templateResponse = await getEmailTemplate(emailData.templateName, licenseId
+    );
 
     // Check if the retrieval was successful
     if (!templateResponse.success || !templateResponse.returnObject) {
@@ -18,96 +41,12 @@ export const sendTemplateEmail = async (emailData: EmailInputData): Promise<{ su
 
     // If successful, proceed with preparing the email
     const emailTemplate = templateResponse.returnObject;
-    const variablesData = [
-    {
-      var: 'user_firstName',
-      value: emailData.user.firstName
-    },
-    {
-      var: 'user_infix',
-      value: emailData.user.infix
-    },
-    {
-      var: 'user_lastName',
-      value: emailData.user.lastName
-    },
-    {
-      var: 'user_fullName',
-      value: emailData.user.fullName
-    },
-    {
-      var: 'user_company',
-      value: emailData.user.company
-    },
-    {
-      var: 'user_plan',
-      value: emailData.user.plan
-    },
-    {
-      var: 'user_licenseCode',
-      value: emailData.user.licenseCode
-    },
-    {
-      var: 'user_role',
-      value: emailData.user.role
-    },
-    {
-      var: 'user_createdAt',
-      value: emailData.user.createdAt
-    },
-    {
-      var: 'user_status',
-      value: emailData.user.status
-    },
-    {
-      var: 'app_name',
-      value: 'myCRM'
-    },
-    {
-      var: 'app_copyright',
-      value: '&copy; 2024 MultiMediaMarkers. Alle rechten voorbehouden.'
-    },
-    {
-      var: 'app_website',
-      value: 'https://www.multimediamarkers.com'
-    },
-    {
-      var: 'app_address',
-      value: 'Oeverlanden 61'
-    },
-    {
-      var: 'app_postalCode',
-      value: '9606RR'
-    },
-    {
-      var: 'app_city',
-      value: 'Kropswolde'
-    },
-    {
-      var: 'app_state',
-      value: 'Groningen'
-    },
-    {
-      var: 'app_country',
-      value: 'Nederland'
-    },
-    {
-      var: 'app_emailSignature',
-      value: 'Het myCRM team'
-    },
-    {
-      var: 'url_user_activate',
-      value: 'https://dev-mycrm.web.app/login'
-    }
-  ]
 
     // Replace variables in the template
-    const htmlUpdated = replaceVariablesInTemplate(emailTemplate.htmlTemplate, variablesData);
-
-    // Define the email data
+    const htmlUpdated = await replaceVariablesInTemplate(emailTemplate.htmlTemplate, user, license)
     const emailDataToSend = {
-      toEmail: emailData.user.email,
-      toEmailName: emailData.user.fullName,
+      toEmail: user.email,
+      toEmailName: user.fullName,
       fromEmail: 'info@multimediamarkers.com',
       fromEmailName: 'MultiMediaMarkers | Augmented Reality Apps',
       subject: emailTemplate.subject,
