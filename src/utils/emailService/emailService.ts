@@ -1,25 +1,24 @@
-// Import the necessary modules and functions object from your Firebase config
-import {EmailInputData, EmailTemplate} from './emailTypes';
+import { EmailInputData } from './emailTypes';
+import getEmailTemplate from './../../composables/emailTemplate/getEmailTemplate';
+import { replaceVariablesInTemplate } from "@/utils/emailService/emailUtils";
 import { httpsCallable } from 'firebase/functions';
-import {functions } from '@/firebase/config';
-import {replaceVariablesInTemplate} from "@/utils/emailService/emailUtils";
-import getEmailTemplate from './../../composables/emailTemplate/getEmailTemplate'
+import { functions } from '@/firebase/config';
+import {ApiResponse} from "@/types/apiResponseType";
 
 export const sendTemplateEmail = async (emailData: EmailInputData): Promise<{ success: boolean, message: string }> => {
+  try {
+    // Retrieve the email template
+    const templateResponse = await getEmailTemplate(emailData.templateName, emailData.licenseCode);
 
-  const sendEmail = httpsCallable(functions, 'sendEmail');
-  
-  const { template, error, load } = getEmailTemplate(emailData.templateName, emailData.licenseCode);
-  await load();
-  const emailTemplate = template.value;
-  if (error.value) {
-    return {success: false, message: `Could not find correct email template due to error: ${error.value}. Please contact support.`};
-  }
-  if (!emailTemplate) {
-    return { success: false, message: 'Could not find correct email template. Please contact support.' };
-  }
-  
-  const variablesData = [
+    // Check if the retrieval was successful
+    if (!templateResponse.success || !templateResponse.returnObject) {
+      // If not successful, return an error message
+      return { success: false, message: templateResponse.message };
+    }
+
+    // If successful, proceed with preparing the email
+    const emailTemplate = templateResponse.returnObject;
+    const variablesData = [
     {
       var: 'user_firstName',
       value: emailData.user.firstName
@@ -101,35 +100,33 @@ export const sendTemplateEmail = async (emailData: EmailInputData): Promise<{ su
       value: 'https://dev-mycrm.web.app/login'
     }
   ]
-  
-  const htmlUpdated = replaceVariablesInTemplate(emailTemplate.htmlTemplate, variablesData);
-  
-  // Define the email data
-  const emailDataToSend = {
-    toEmail: emailData.user.email,
-    toEmailName: emailData.user.fullName,
-    fromEmail: 'info@multimediamarkers.com',
-    fromEmailName: 'MultiMediaMarkers | Augmented Reality Apps',
-    subject: emailTemplate.subject,
-    html: htmlUpdated
-  };
 
-  interface ApiResponse {
-    success: boolean;
-    message: string;
-    returnValue?: string
-  }
+    // Replace variables in the template
+    const htmlUpdated = replaceVariablesInTemplate(emailTemplate.htmlTemplate, variablesData);
 
-  try {
+    // Define the email data
+    const emailDataToSend = {
+      toEmail: emailData.user.email,
+      toEmailName: emailData.user.fullName,
+      fromEmail: 'info@multimediamarkers.com',
+      fromEmailName: 'MultiMediaMarkers | Augmented Reality Apps',
+      subject: emailTemplate.subject,
+      html: htmlUpdated
+    };
+
+    // Send the email
+    const sendEmail = httpsCallable(functions, 'sendEmail');
     const result = await sendEmail(emailDataToSend);
-    const data = result.data as ApiResponse;
-    if (data.success) {
-      return {success: true, message: data.message };
-    }
-    else {
-      return {success: false, message: data.message};
+    const data = result.data as ApiResponse; // Adjust based on how your cloud function returns data
+
+    // Check the response from the cloud function
+    if (data && data.success) {
+      return { success: true, message: data.message };
+    } else {
+      return { success: false, message: data.message };
     }
   } catch (error) {
-    return { success: false, message: 'Email could not be sent due to an error. Details: ' + error };
+    // Catch and handle any errors
+    return { success: false, message: 'Email could not be sent due to an error: ${error.message}' };
   }
 };
