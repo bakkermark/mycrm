@@ -290,10 +290,13 @@ const deleteUser = async (id: string) => {
   }
 };
 
-
 const router = useRouter();
 const navigateToAddUser = () => {
   router.push({ name: 'user-add' });
+};
+
+const navigateToEditUser = (id: string) => {
+  router.push({ name: 'user-add-id', params: { id: id } });
 };
 
 const widgetData = ref([
@@ -613,7 +616,7 @@ const widgetData = ref([
             />
           </IconBtn>
 
-          <IconBtn>
+          <IconBtn @click="navigateToEditUser(item.id)">
             <VTooltip
               location="top"
               activator="parent"
