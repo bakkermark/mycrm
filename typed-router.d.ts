@@ -42,6 +42,8 @@ declare module 'vue-router/auto/routes' {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
     'license-add': RouteRecordInfo<'license-add', '/license/add', Record<never, never>, Record<never, never>>,
+    'license-components-license-settings': RouteRecordInfo<'license-components-license-settings', '/license/components/LicenseSettings', Record<never, never>, Record<never, never>>,
+    'license-components-license-settings-billing': RouteRecordInfo<'license-components-license-settings-billing', '/license/components/LicenseSettingsBilling', Record<never, never>, Record<never, never>>,
     'license-details-id': RouteRecordInfo<'license-details-id', '/license/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'license-list': RouteRecordInfo<'license-list', '/license/list', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,

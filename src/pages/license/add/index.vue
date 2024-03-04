@@ -1,102 +1,39 @@
 <template>
-  <VForm ref="refForm" @submit.prevent="handleSubmit">
-    <VRow>
-      <VCol cols="12" md="4">
-        <AppTextField v-model="firstName" label="First Name" placeholder="Type in first name ..." :rules="[requiredValidator]"/>
-      </VCol>
-      <VCol cols="12" md="2">
-        <AppTextField v-model="infix" label="Infix" placeholder="Type in infix ... "/>
-      </VCol>
-      <VCol cols="12" md="6">
-        <AppTextField v-model="lastName" label="Last Name" placeholder="Type in last name ..."
-                      :rules="[requiredValidator]"/>
-      </VCol>
-      <VCol cols="12" md="6">
-        <AppTextField v-model="email" label="Email" placeholder="Type in email address ..." :rules="[requiredValidator, emailValidator]"/>
-      </VCol>
-      <VCol cols="12" md="6">
-        <AppTextField v-model="company" label="Company name" placeholder="Type in company name ..."
-                      :rules="[requiredValidator]"/>
-      </VCol>
-      <VCol cols="12" md="6">
-        <AppSelect
-          v-model="selectedPlan"
-          :items="plans"
-          :rules="[requiredValidator]"
-          placeholder="Select a plan ..."
-          label="Plan"
-          name="selectPlan"
-          require
-        />
-      </VCol>
-      <VCol cols="12">
-        <VBtn
-          type="submit"
-          class="me-2"
-        >
-          Save
-        </VBtn>
+  <VTabs
+    v-model="currentTab"
+    class="v-tabs-pill"
+  >
+    <VTab><VIcon icon="tabler-user"/>License</VTab>
+    <VTab v-if="id"><VIcon icon="tabler-lock"/>Billing</VTab>
+  </VTabs>
 
-        <VBtn
-          color="secondary"
-          type="reset"
-          variant="tonal"
-        >
-          Reset
-        </VBtn>
-      </VCol>
-    </VRow>
-  </VForm>
+  <VCardText>
+    <VWindow v-model="currentTab">
+      <!-- Account Tab Content -->
+      <VWindowItem :value="0">
+        <!-- Use the LicenseSettings component -->
+        <LicenseSettings @licenseUpdated="handleLicenseUpdated" />
+      </VWindowItem>
+      <!-- Security Tab Content -->
+      <VWindowItem :value="1" v-if="id">
+        <!-- Use the LicenseSettingsBilling component -->
+        <LicenseSettingsBilling :id="id" />
+      </VWindowItem>
+    </VWindow>
+  </VCardText>
 </template>
 
-<script lang="ts" setup>
-import {ref} from 'vue';
-import {useRouter} from 'vue-router';
-import {addDoc, collection, doc, setDoc} from 'firebase/firestore'
-import {auth, projectFirestore} from '@/firebase/config'
-import AppTextField from "@core/components/app-form-elements/AppTextField.vue"
-import type {VForm} from 'vuetify/components'
-import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
-import { useI18n } from 'vue-i18n';
+<script setup lang="ts">
+import LicenseSettings from '../components/LicenseSettings.vue';
+import LicenseSettingsBilling from '../components/LicenseSettingsBilling.vue';
+const currentTab = ref(0);
+const id = ref<string | null>(null); // Initially, no uid is known
 
-const { t } = useI18n();
-const routePushName = 'license-list'
-const firebaseCollectionName = 'Licenses'
-const snackbar = useSnackbarStore();
-const router = useRouter();
-const refForm = ref<VForm | null>(null);
-const firstName = ref('')
-const infix = ref('')
-const lastName = ref('')
-const email = ref('')
-const company = ref('')
-const plans = ['Basic', 'Extended', 'Platinum']
-const selectedPlan = ref('')
-
-const handleSubmit = async () => {
-  if (refForm.value) {
-    const validationResult = await refForm.value.validate();
-    if (validationResult.valid) {
-      try {
-        const data = {
-          company: company.value,
-          firstName: firstName.value,
-          infix: infix.value,
-          lastName: lastName.value,
-          fullName: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
-          email: email.value,
-          plan: selectedPlan.value,
-        }
-        await addDoc(collection(projectFirestore, firebaseCollectionName), data)
-        const snackBarPayload = { color: "success", message: t("License has been added succesfully.") }
-        snackbar.showSnackbar(snackBarPayload)
-        await router.push({ name: routePushName })
-      } catch(err) {
-        const snackBarPayload = { color: "error", message: t("License could not be added. Details: " + err) }
-        snackbar.showSnackbar(snackBarPayload)
-        console.error(err);
-      }
-    }
-  }
-};
+// Handler for the userUpdated event
+function handleLicenseUpdated(newId: string) {
+  id.value = newId; // Update id to show the Billing tab
+  currentTab.value = 1; // Switch to the Billing tab
+}
 </script>
+
+<style></style>

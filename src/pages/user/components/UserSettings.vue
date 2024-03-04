@@ -12,6 +12,9 @@ import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import { v4 as uuidv4 } from 'uuid';
 import 'firebase/functions';
 import {getFunctions, httpsCallable} from 'firebase/functions';
+import {License} from "@/types/licenseType";
+import {ApiResponse} from "@/types/apiResponseType";
+import { collection } from "firebase/firestore";
 
 const emit = defineEmits(['userUpdated']);
 const {t} = useI18n();
@@ -46,8 +49,6 @@ const resetAvatar = () => {
   avatarImage.value = ''
 }
 
-
-
 onMounted(async () => {
   await load();
   licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
@@ -55,16 +56,6 @@ onMounted(async () => {
 
 const submittingData = ref(false)
 const snackbarStore = useSnackbarStore();
-
-interface cloudFunctionResponse {
-  success: boolean;
-  message: string;
-  returnValue: string;
-}
-
-interface License {
-  plan: string;
-}
 
 const handleSubmit = async () => {
   if (refForm.value) {
@@ -76,7 +67,7 @@ const handleSubmit = async () => {
         const functions = getFunctions();
         const addUser = httpsCallable(functions, 'addUser');
         const result = await addUser({email: email.value, password: password.value});
-        const response = result.data as cloudFunctionResponse;
+        const response = result.data as ApiResponse;
         if (!response.success) {
           snackbarStore.showSnackbar({color: "error", message: t(response.message)})
           return
@@ -87,7 +78,8 @@ const handleSubmit = async () => {
         const companyIdSplit = selectedLicenseHolder.value.split(' (');
         const companyName = companyIdSplit[0];
         const licenseId = companyIdSplit[1].replace(')', '');
-        const docRef = doc(projectFirestore, "Licenses", licenseId);
+        const licensesCollection = collection(projectFirestore, "Licenses");
+        const docRef = doc(licensesCollection, licenseId);
         const docSnap = await getDoc(docRef);
         let selectedPlan = '';
         if (docSnap.exists()) {
@@ -122,7 +114,9 @@ const handleSubmit = async () => {
           avatar: avatar,
           createdAt: new Date()
         }
-        await setDoc(doc(projectFirestore, "Users", uid), User);
+
+        const usersCollection = collection(projectFirestore, "Users");
+        await setDoc(doc(usersCollection, uid), User);
         emit('userUpdated', uid); // Emit an event with the uid
         snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")})
       } catch (err) {
