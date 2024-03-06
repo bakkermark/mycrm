@@ -296,7 +296,7 @@ const navigateToAddUser = () => {
 };
 
 const navigateToEditUser = (id: string) => {
-  router.push({ name: 'user-add-id', params: { id: id } });
+  router.push({ path: '/contact/addedit', query: { id: id } });
 };
 
 const widgetData = ref([

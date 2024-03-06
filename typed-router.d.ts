@@ -41,6 +41,7 @@ declare module 'vue-router/auto/routes' {
   export interface RouteNamedMap {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
+    'contact-addedit': RouteRecordInfo<'contact-addedit', '/contact/addedit', Record<never, never>, Record<never, never>>,
     'license-add': RouteRecordInfo<'license-add', '/license/add', Record<never, never>, Record<never, never>>,
     'license-components-license-settings': RouteRecordInfo<'license-components-license-settings', '/license/components/LicenseSettings', Record<never, never>, Record<never, never>>,
     'license-components-license-settings-billing': RouteRecordInfo<'license-components-license-settings-billing', '/license/components/LicenseSettingsBilling', Record<never, never>, Record<never, never>>,
