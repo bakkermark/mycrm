@@ -10,7 +10,6 @@ import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import { v4 as uuidv4 } from 'uuid';
-import 'firebase/functions';
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {License} from "@/types/licenseType";
 import {ApiResponse} from "@/types/apiResponseType";
@@ -23,43 +22,57 @@ const {t} = useI18n();
 const avatarImage = ref('')
 const {licenses, load} = getLicenses();
 const refForm = ref<VForm | null>(null);
-const firstName = ref('')
-const infix = ref('')
-const lastName = ref('')
-const email = ref('')
-const selectedLicenseHolder = ref('')
 const roles = ['Admin', 'Standard User']
-const selectedRole = ref('')
 const licenseHolders = ref<string[]>([]);
 const password = ref(uuidv4());
 const route = useRoute();
 const userId = ref<string | null>(null);
 const user = ref<User | null>(null);
 const refInputEl = ref()
+const userForm = reactive({
+  firstName: '',
+  infix: '',
+  lastName: '',
+  email: '',
+  selectedLicenseHolder: '',
+  selectedRole: '',
+});
 
 onMounted(async () => {
   userId.value = route.query.id as string | null;
-
+  
+  await load(); // getLicenses
+  licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
+  
   if (!userId.value) {
     console.log('No userId in query parameter so adding user')
     return;
-  }
-  
-  try {
-    const userDocRef = doc(projectFirestore, 'Users', userId.value);
-    const userDocSnap = await getDoc(userDocRef);
-    if (userDocSnap.exists()) {
-      user.value = userDocSnap.data() as User; // Cast to User type
-    } else {
-      console.log('User not found with id ' + userId.value);
+  } else {
+    try {
+      const userDocRef = doc(projectFirestore, 'Users', userId.value);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data() as User;
+        userForm.firstName = userData.firstName;
+        userForm.lastName = userData.lastName;
+        userForm.email = userData.email;
+        userForm.selectedRole = userData.role;
+        userForm.selectedLicenseHolder = userData.company + " - " + userData.licenseCode;
+      } else {
+        console.log('User not found with id ' + userId.value);
+        return
+      }
+    } catch (err) {
+      console.error('Error fetching user data:', err);
       return
+    } finally {
+      if (user.value != null) {
+        
+      } else {
+        // Handle the case where user.value is null, if necessary
+        console.error('User data is null');
+      }
     }
-  } catch (err) {
-    console.error('Error fetching user data:', err);
-    return
-  } finally {
-    firstName.value = user.value.firstName
-    lastName.value = user.value.lastName
   }
 });
 
@@ -80,8 +93,7 @@ const resetAvatar = () => {
 }
 
 onMounted(async () => {
-  await load();
-  licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
+  
 });
 
 const submittingData = ref(false)
@@ -131,13 +143,13 @@ const handleSubmit = async () => {
         // Add user to FireStore collection Users
         const User = {
           id: uid,
-          firstName: firstName.value,
-          infix: infix.value,
-          lastName: lastName.value,
-          fullName: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
-          email: email.value,
+          firstName: userForm.firstName,
+          infix: userForm.infix,
+          lastName: userForm.lastName,
+          fullName: [userForm.firstName, userForm.infix, userForm.lastName].filter(Boolean).join(" "),
+          email: userForm.email,
           status: "Active",
-          role: selectedRole.value,
+          role: userForm.selectedRole,
           company: companyName,
           licenseCode: licenseId,
           plan: selectedPlan,
@@ -197,29 +209,29 @@ const handleSubmit = async () => {
             </form>
           </VCol>
           <VCol cols="12" md="4">
-            <AppTextField v-model="firstName" label="First Name" placeholder="Type in first name ..."
+            <AppTextField v-model="userForm.firstName" label="First Name" placeholder="Type in first name ..."
                           :rules="[requiredValidator]"/>
           </VCol>
           <VCol cols="12" md="2">
-            <AppTextField v-model="infix" label="Infix" placeholder="Type in infix ... "/>
+            <AppTextField v-model="userForm.infix" label="Infix" placeholder="Type in infix ... "/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="lastName" label="Last Name" placeholder="Type in last name ..."
+            <AppTextField v-model="userForm.lastName" label="Last Name" placeholder="Type in last name ..."
                           :rules="[requiredValidator]"/>
           </VCol>
           <VCol cols="12" md="12">
-            <AppTextField v-model="email" label="Email" placeholder="Type in email address ..."
+            <AppTextField v-model="userForm.email" label="Email" placeholder="Type in email address ..."
                           :rules="[requiredValidator, emailValidator]"/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppSelect v-model="selectedLicenseHolder" :items="licenseHolders" :rules="[requiredValidator]"
+            <AppSelect v-model="userForm.selectedLicenseHolder" :items="licenseHolders" :rules="[requiredValidator]"
                        placeholder="Select a license holder ..." label="License holder" name="selectLicenseHolder"
                        require/>
 
           </VCol>
           <VCol cols="12" md="6">
             <AppSelect
-              v-model="selectedRole"
+              v-model="userForm.selectedRole"
               :items="roles"
               :rules="[requiredValidator]"
               placeholder="Select a role ..."
