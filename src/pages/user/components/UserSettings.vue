@@ -15,6 +15,8 @@ import {getFunctions, httpsCallable} from 'firebase/functions';
 import {License} from "@/types/licenseType";
 import {ApiResponse} from "@/types/apiResponseType";
 import { collection } from "firebase/firestore";
+import {useRoute} from "vue-router";
+import {User} from "@/pages/user/userTypes";
 
 const emit = defineEmits(['userUpdated']);
 const {t} = useI18n();
@@ -30,8 +32,36 @@ const roles = ['Admin', 'Standard User']
 const selectedRole = ref('')
 const licenseHolders = ref<string[]>([]);
 const password = ref(uuidv4());
-
+const route = useRoute();
+const userId = ref<string | null>(null);
+const user = ref<User | null>(null);
 const refInputEl = ref()
+
+onMounted(async () => {
+  userId.value = route.query.id as string | null;
+
+  if (!userId.value) {
+    console.log('No userId in query parameter so adding user')
+    return;
+  }
+  
+  try {
+    const userDocRef = doc(projectFirestore, 'Users', userId.value);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) {
+      user.value = userDocSnap.data() as User; // Cast to User type
+    } else {
+      console.log('User not found with id ' + userId.value);
+      return
+    }
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+    return
+  } finally {
+    firstName.value = user.value.firstName
+    lastName.value = user.value.lastName
+  }
+});
 
 const changeAvatar = (file: Event) => {
   const fileReader = new FileReader()
@@ -115,10 +145,12 @@ const handleSubmit = async () => {
           createdAt: new Date()
         }
 
-        const usersCollection = collection(projectFirestore, "Users");
-        await setDoc(doc(usersCollection, uid), User);
-        emit('userUpdated', uid); // Emit an event with the uid
-        snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")})
+        if (uid) {
+          const usersCollection = collection(projectFirestore, "Users");
+          await setDoc(doc(usersCollection, uid), User)
+          emit('userUpdated', uid);
+          snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")})
+        }
       } catch (err) {
         snackbarStore.showSnackbar({color: "error", message: t("User could not be added. Details: " + err)})
         console.error("Error: " + err);
