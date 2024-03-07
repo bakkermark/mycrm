@@ -17,9 +17,9 @@ import { collection } from "firebase/firestore";
 import {useRoute} from "vue-router";
 import {User} from "@/pages/user/userTypes";
 
+const isEditing = ref(false);
 const emit = defineEmits(['userUpdated']);
 const {t} = useI18n();
-const avatarImage = ref('')
 const {licenses, load} = getLicenses();
 const refForm = ref<VForm | null>(null);
 const roles = ['Admin', 'Standard User']
@@ -29,6 +29,8 @@ const route = useRoute();
 const userId = ref<string | null>(null);
 const user = ref<User | null>(null);
 const refInputEl = ref()
+const submittingData = ref(false)
+const snackbarStore = useSnackbarStore();
 const userForm = reactive({
   firstName: '',
   infix: '',
@@ -36,20 +38,23 @@ const userForm = reactive({
   email: '',
   selectedLicenseHolder: '',
   selectedRole: '',
+  avatar: ''
 });
 
 onMounted(async () => {
-  userId.value = route.query.id as string | null;
-  
   await load(); // getLicenses
   licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
   
-  if (!userId.value) {
-    console.log('No userId in query parameter so adding user')
+  // Check if there is a query parameter id in the url.
+  userId.value = route.query.id as string | null;
+  if (userId.value == null) {
+    isEditing.value = false;
     return;
   } else {
+    isEditing.value = true;
+    
     try {
-      const userDocRef = doc(projectFirestore, 'Users', userId.value);
+      const userDocRef = doc(projectFirestore, 'Users', String(userId.value));
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data() as User;
@@ -58,24 +63,23 @@ onMounted(async () => {
         userForm.email = userData.email;
         userForm.selectedRole = userData.role;
         userForm.selectedLicenseHolder = userData.company + " - " + userData.licenseCode;
+        if (userData.avatar != null) {
+          userForm.avatar = userData.avatar;
+        }
+        // Update the user id so other tabs come available in user/index.vue
+        emit('userUpdated', userId);
       } else {
-        console.log('User not found with id ' + userId.value);
+        snackbarStore.showSnackbar({color: "error", message: t("Error fetching data. Please try again.")})  
         return
       }
     } catch (err) {
-      console.error('Error fetching user data:', err);
+      snackbarStore.showSnackbar({color: "error", message: t("Error fetching data. Please try again.")})
       return
-    } finally {
-      if (user.value != null) {
-        
-      } else {
-        // Handle the case where user.value is null, if necessary
-        console.error('User data is null');
-      }
     }
   }
 });
 
+// Change the avatar image file.
 const changeAvatar = (file: Event) => {
   const fileReader = new FileReader()
   const files = (file.target as HTMLInputElement).files
@@ -83,21 +87,24 @@ const changeAvatar = (file: Event) => {
     fileReader.readAsDataURL(files[0])
     fileReader.onload = () => {
       if (typeof fileReader.result === 'string')
-        avatarImage.value = fileReader.result
+        userForm.avatar = fileReader.result
     }
   }
 }
 
 const resetAvatar = () => {
-  avatarImage.value = ''
+  userForm.avatar = ''
 }
 
-onMounted(async () => {
-  
-});
-
-const submittingData = ref(false)
-const snackbarStore = useSnackbarStore();
+const resetForm = () => {
+  userForm.lastName = '';
+  userForm.avatar = '';
+  userForm.email = '';
+  userForm.selectedRole = '';
+  userForm.selectedLicenseHolder = '';
+  userForm.firstName = '';
+  userForm.infix = ''
+}
 
 const handleSubmit = async () => {
   if (refForm.value) {
@@ -108,16 +115,17 @@ const handleSubmit = async () => {
         submittingData.value = true;
         const functions = getFunctions();
         const addUser = httpsCallable(functions, 'addUser');
-        const result = await addUser({email: email.value, password: password.value});
+        const result = await addUser({email: userForm.email, password: password.value});
         const response = result.data as ApiResponse;
+        // If an error occured inform user and stop.
         if (!response.success) {
           snackbarStore.showSnackbar({color: "error", message: t(response.message)})
           return
         }
         
-        // If user is added to Firebase Auth
+        // If user is added succesfully to Firebase Auth then get License data. 
         const uid = response.returnValue;
-        const companyIdSplit = selectedLicenseHolder.value.split(' (');
+        const companyIdSplit = userForm.selectedLicenseHolder.split(' (');
         const companyName = companyIdSplit[0];
         const licenseId = companyIdSplit[1].replace(')', '');
         const licensesCollection = collection(projectFirestore, "Licenses");
@@ -175,7 +183,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <VCard title="User">
+  <VCard :title="isEditing ? 'Edit user' : 'Add user'">
     <VCardText class="pt-0">
       <VForm ref="refForm" @submit.prevent="handleSubmit">
         <VRow>
@@ -186,7 +194,7 @@ const handleSubmit = async () => {
               rounded
               size="100"
               class="me-6"
-              :image="avatarImage"
+              :image="userForm.avatar"
             />
           </VCol>
           <VCol cols="12" md="11">
@@ -247,7 +255,7 @@ const handleSubmit = async () => {
               Save
               <VTooltip open-delay="500" activator="parent" location="top">Save the user data</VTooltip>
             </VBtn>
-            <VBtn :disabled="submittingData" color="secondary" type="reset" variant="tonal">
+            <VBtn :disabled="submittingData" @click="resetForm" color="secondary" type="reset" variant="tonal">
               Reset
               <VTooltip open-delay="500" activator="parent" location="top">Reset the form</VTooltip>
             </VBtn>

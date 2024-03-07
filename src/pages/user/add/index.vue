@@ -1,5 +1,5 @@
+<!--suppress ALL -->
 <template>
-  <h2>{{ isEditing ? 'Contact Bewerken' : 'Nieuw Contact Toevoegen' }}</h2>
   <VTabs
     v-model="currentTab"
     class="v-tabs-pill"
@@ -27,10 +27,8 @@
 <script setup lang="ts">
 import UserSettings from "@/pages/user/components/UserSettings.vue";
 import UserSettingsSecurity from "@/pages/user/components/UserSettingsSecurity.vue";
-import {computed, onMounted, ref} from "vue";
+import {computed, ref} from "vue";
 import {useRoute} from "vue-router";
-import {doc, getDoc} from "firebase/firestore";
-import {projectFirestore} from "@/firebase/config";
 import {User} from "@/pages/user/userTypes";
 
 const currentTab = ref(0);
@@ -43,29 +41,8 @@ const error = ref<string | null>(null);
 // Handler for the userUpdated event
 function handleUserUpdated(newUid: string) {
   uid.value = newUid; // Update uid to show the Security tab
-  currentTab.value = 1; // Switch to the Security tab
+  //currentTab.value = 1; // Switch to the Security tab
 }
 
-onMounted(async () => {
-  uid.value = route.query.id as string | null;
-  try {
-    const userDocRef = doc(projectFirestore, 'Users', uid.value);
-    const userDocSnap = await getDoc(userDocRef);
-    if (userDocSnap.exists()) {
-      user.value = userDocSnap.data() as User; // Cast to User type
-    } else {
-      error.value = 'User not found';
-    }
-  } catch (err) {
-    error.value = 'Error fetching user data';
-    console.error('Error fetching user data:', err);
-  } finally {
-    loading.value = false;
-  }
-});
-
 const isEditing = computed(() => uid.value !== undefined && uid.value !== '');
-
 </script>
-
-<style></style>
