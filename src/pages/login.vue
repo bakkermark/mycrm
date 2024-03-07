@@ -14,6 +14,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { useLicenseStore } from '@/plugins/pinia/licenseStore';
 import { auth } from '@/firebase/config';
+import UAParser from 'ua-parser-js';
+import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
 
 definePage({
   meta: {
@@ -21,6 +23,7 @@ definePage({
   },
 })
 
+const submittingData = ref(false)
 const router = useRouter();
 const form = ref({
   email: '',
@@ -39,7 +42,9 @@ const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 const handleLogin = async () => {
   signInWithEmailAndPassword(auth, form.value.email, form.value.password)
     .then(async (userCredential) => {
+      submittingData.value = true;
       const user = userCredential.user;
+      let licenseCode = '';
       if (user !== null && user.email !== null) {
         const firestore = getFirestore();
         const usersCollection = collection(firestore, "Users");
@@ -48,24 +53,57 @@ const handleLogin = async () => {
         if (!querySnapshot.empty) {
           const userDoc = querySnapshot.docs[0];
           const data = userDoc.data();
-          const licenseCode = data.licenseCode;
+          licenseCode = data.licenseCode;
           const licenseStore = useLicenseStore();
           licenseStore.setLicenseCode(licenseCode);
           console.log("User " + data.fullName +  " logged in succesfully and has licenseCode: " + data.licenseCode)
-          await router.push({ name: 'root' });
         } else {
           console.log("User not found or password incorrect.");
         }
+        
+        // Extracting browser, OS, and device information using UAParser
+        const parser = new UAParser();
+        const result = parser.getResult();
+        const browserInfo = `${result.browser.name} ${result.browser.version}`;
+        const osInfo = `${result.os.name} ${result.os.version}`;
+        const deviceInfo = result.device.model || 'unknown device';
+
+        // Prepare the data to send to your Cloud Function
+        const loginInfo = {
+          userId: user.uid,
+          licenseId: licenseCode, // You need to set this according to your application logic
+          browser: browserInfo,
+          os: osInfo,
+          device: deviceInfo,
+        };
+        
+        console.log("LogInfo: " + JSON.stringify(loginInfo))
+
+        // Call your Cloud Function
+        await fetch('https://us-central1-dev-mycrm.cloudfunctions.net/addLogin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(loginInfo),
+        })
+          .then(response => response.json())
+          .then(data => {
+            router.push({ name: 'root' });
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+          });
       }
     })
     .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.log("Error-code: " +  errorCode)
-      console.log("Error-message:" + errorMessage)
+      console.error("addLogin function failed:", error);
+      submittingData.value = false;
     });
+  
 };
 </script>
+
 
 <template>
   <VRow
@@ -152,11 +190,9 @@ const handleLogin = async () => {
                   </a>
                 </div>
 
-                <VBtn
-                  block="true"
-                  type="submit"
-                >
-                  Login
+                <VBtn block="true" type="submit" :disabled="submittingData">
+                  <VProgressCircular v-if="submittingData" :size="20" :width="2" class="mr-2" indeterminate/>
+                  {{ submittingData ? 'Please wait ...' : 'Login' }}
                 </VBtn>
               </VCol>
 

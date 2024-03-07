@@ -12,50 +12,25 @@ const recentDevicesHeaders = [
   },
   {
     title: 'LOCATION',
-    key: 'location',
+    key: 'city',
+  },
+  {
+    title: 'COUNTRY',
+    key: 'country',
   },
   {
     title: 'RECENT ACTIVITY',
-    key: 'recentActivity',
+    key: 'createdAt',
   },
 ]
 
-const recentDevices = [
-  {
-    browser: 'Chrome on Windows',
-    device: 'HP Spectre 360',
-    location: 'New York, NY',
-    recentActivity: '28 Apr 2022, 18:20',
-    deviceIcon: {
-      icon: 'tabler-brand-windows',
-      color: 'primary',
-    },
-  },
-  {
-    browser: 'Chrome on iPhone',
-    device: 'iPhone 12x',
-    location: 'Los Angeles, CA',
-    recentActivity: '20 Apr 2022, 10:20',
-    deviceIcon: {
-      icon: 'tabler-device-mobile',
-      color: 'error',
-    },
-  },
-  {
-    browser: 'Chrome on Android',
-    device: 'Oneplus 9 Pro',
-    location: 'San Francisco, CA',
-    recentActivity: '16 Apr 2022, 04:20',
-    deviceIcon: {
-      icon: 'tabler-brand-android',
-      color: 'success',
-    },
-  },
+const recentLogins = [ 
   {
     browser: 'Chrome on macOS',
     device: 'Apple iMac',
-    location: 'New York, NY',
-    recentActivity: '28 Apr 2022, 18:20',
+    city: 'New York, NY',
+    country: 'USA',
+    createdAt: '28 Apr 2022, 18:20',
     deviceIcon: {
       icon: 'tabler-brand-apple',
       color: 'secondary',
@@ -64,8 +39,9 @@ const recentDevices = [
   {
     browser: 'Chrome on Windows',
     device: 'HP Spectre 360',
-    location: 'Los Angeles, CA',
-    recentActivity: '20 Apr 2022, 10:20',
+    city: 'Groningen',
+    country: 'The Netherlands',
+    createdAt: '20 Apr 2022, 10:20',
     deviceIcon: {
       icon: 'tabler-brand-windows',
       color: 'primary',
@@ -74,8 +50,9 @@ const recentDevices = [
   {
     browser: 'Chrome on Android',
     device: 'Oneplus 9 Pro',
-    location: 'San Francisco, CA',
-    recentActivity: '16 Apr 2022, 04:20',
+    city: 'Antwerpen',
+    country: 'Belgium',
+    createdAt: '16 Apr 2022, 04:20',
     deviceIcon: {
       icon: 'tabler-brand-android',
       color: 'success',
@@ -90,7 +67,7 @@ const recentDevices = [
     <VCard title="Recent logins">
       <VDataTable
         :headers="recentDevicesHeaders"
-        :items="recentDevices"
+        :items="recentLogins"
         hide-default-footer
         class="text-no-wrap"
       >

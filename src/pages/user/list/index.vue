@@ -1,13 +1,12 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import { VDataTableServer } from 'vuetify/labs/VDataTable'
-import { paginationMeta } from '@/plugins/fake-api/utils/paginationMeta'
+import {ref, computed, onMounted, watch } from 'vue';
+import {VDataTableServer} from 'vuetify/labs/VDataTable'
+import {paginationMeta} from '@/plugins/fake-api/utils/paginationMeta'
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import { useI18n } from 'vue-i18n';
+import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
-import { functions } from '@/firebase/config';
 
 const { t } = useI18n();
 const isLoading = ref(true)

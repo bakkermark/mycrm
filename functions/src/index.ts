@@ -40,59 +40,59 @@ export const getUsers = functions.https.onCall(async () => {
 // --------------------------------------------------------------------------
 export const changeUserStatus
   = functions.https.onCall(async (data, context) => {
-    if (!(context.auth && context.auth.uid)) {
-      return {
-        success: false,
-        message: 'You must be logged in to execute this action.',
-      }
+  if (!(context.auth && context.auth.uid)) {
+    return {
+      success: false,
+      message: 'You must be logged in to execute this action.',
     }
-    if (!data) {
-        return {
-          success: false,
-          message:
-            'An error occurred in the application. Please contact support desk.',
-        }
-      }
-
-    const { uid, enable } = data
-    const userAuth = context.auth?.uid
-    const userSnapshot = await db.collection('Users').doc(userAuth).get()
-    const userData = userSnapshot.data()
-    if (!(userData && ['SuperAdmin', 'Admin'].includes(userData.role))) {
-      return {
-        success: false,
-        message: 'You do not have the required permissions.',
-      }
+  }
+  if (!data) {
+    return {
+      success: false,
+      message:
+        'An error occurred in the application. Please contact support desk.',
     }
+  }
 
-    const targetUserSnapshot = await db.collection('Users').doc(uid).get()
-    const targetUserData = targetUserSnapshot.data()
-
-    if (userData.role === 'Admin' && targetUserData
-      && userData.licenseCode !== targetUserData.licenseCode) {
-      return {
-        success: false,
-        message: 'You do not have the required permissions.',
-      }
+  const { uid, enable } = data
+  const userAuth = context.auth?.uid
+  const userSnapshot = await db.collection('Users').doc(userAuth).get()
+  const userData = userSnapshot.data()
+  if (!(userData && ['SuperAdmin', 'Admin'].includes(userData.role))) {
+    return {
+      success: false,
+      message: 'You do not have the required permissions.',
     }
+  }
 
-    const newStatus = enable ? 'Active' : 'Inactive'
+  const targetUserSnapshot = await db.collection('Users').doc(uid).get()
+  const targetUserData = targetUserSnapshot.data()
+
+  if (userData.role === 'Admin' && targetUserData
+    && userData.licenseCode !== targetUserData.licenseCode) {
+    return {
+      success: false,
+      message: 'You do not have the required permissions.',
+    }
+  }
+
+  const newStatus = enable ? 'Active' : 'Inactive'
 
   //TODO Put in try catch block.
-    await admin.auth().updateUser(uid, { disabled: !enable })
-    await db.collection('Users').doc(uid).update({ status: newStatus })
+  await admin.auth().updateUser(uid, { disabled: !enable })
+  await db.collection('Users').doc(uid).update({ status: newStatus })
 
-    let message = 'User status has been changed'
-    if (newStatus === 'Active')
-      message = 'User is successfully enabled'
-    else if (newStatus === 'Inactive')
-      message = 'User is successfully disabled'
+  let message = 'User status has been changed'
+  if (newStatus === 'Active')
+    message = 'User is successfully enabled'
+  else if (newStatus === 'Inactive')
+    message = 'User is successfully disabled'
 
-    return {
-      success: true,
-      message,
-    }
-  })
+  return {
+    success: true,
+    message,
+  }
+})
 
 // --------------------------------------------------------------------------
 // FUNCTION: deleteUser
@@ -135,7 +135,7 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
         message: 'User can not be found.',
       };
     }
-    
+
     await admin.auth().deleteUser(uid)
     console.log("User " + userData.fullName + " deleted from FB Auth.")
     await db.collection('Users').doc(uid).delete()
@@ -159,7 +159,7 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
     // Delete avatar image from Firebase Storage
     console.log("Avatar " +  avatarPathUrl + " of user " + userData.fullName + " being deleted ...")
     await bucket.file(avatarPathUrl).delete();
-    
+
     return {
       success: true,
       message: 'User deleted successfully',
@@ -303,7 +303,7 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
     const mailerSend = new MailerSend({
       apiKey: 'mlsn.02eb112fae569c21f9611c32d3f0affaa30f83ed5add050ad44e0f7f4f8dab03' //functions.config().mailersend.apikey,
     });
-    
+
     const sentFrom = new Sender(data.fromEmail, data.fromEmailName);
     const recipients = [new Recipient(data.toEmail, data.toEmailName)];
 
@@ -336,4 +336,69 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
       return { success: false, message: 'Email processing error occured. Details: ' + error };
     }
   }
+});
+// --------------------------------------------------------------------------
+// FUNCTION: getIpInfo
+// --------------------------------------------------------------------------
+import IPinfoWrapper, { IPinfo } from "node-ipinfo";
+import * as cors from 'cors';
+
+// Initialize the IPinfoWrapper with your token
+const ipinfoWrapper = new IPinfoWrapper("49b4494ac156b1");
+
+// Initialize cors with the default configuration - allow requests from any origin
+const corsHandler = cors({origin: true});
+// Define your Cloud Function
+exports.addLogin = functions.https.onRequest((req, res) => {
+  // Use the cors middleware
+  corsHandler(req, res, async () => {
+    // Ensure the request is a POST
+    if (req.method !== 'POST') {
+      res.status(405).send('Method Not Allowed');
+      return;
+    }
+
+    // The rest of your function logic remains the same...
+    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    console.log("IP-address: " + ip);
+
+    if (Array.isArray(ip)) {
+      ip = ip[0];
+    } else {
+      // @ts-ignore
+      ip = ip.split(',')[0].trim();
+    }
+
+    const { licenseId, userId, browser, os, device } = req.body;
+
+    if (!licenseId || !userId) {
+      res.status(400).send('Missing licenseId or userId');
+      return;
+    }
+
+    try {
+      const response: IPinfo = await ipinfoWrapper.lookupIp(ip);
+      const { city, region, country, loc } = response;
+
+      const loginData = {
+        ipAddress: ip,
+        userId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        city,
+        region,
+        country,
+        location: loc,
+        browser,
+        os,
+        device,
+      };
+
+      await db.collection(`Licenses/${licenseId}/Logins`).add(loginData);
+
+      res.status(200).json({ result: 'Login added successfully' });
+    } catch (error) {
+      console.error('Error adding login:', error);
+      res.status(500).send('Error adding login');
+    }
+  });
 });
