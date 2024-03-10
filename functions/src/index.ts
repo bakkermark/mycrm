@@ -369,7 +369,7 @@ exports.addLogin = functions.https.onRequest((req, res) => {
       ip = ip.split(',')[0].trim();
     }
 
-    const { licenseId, userId, browser, os, device } = req.body;
+    const { licenseId, userId, browser, browserVersion, os, osVersion, device, deviceType } = req.body;
 
     if (!licenseId || !userId) {
       res.status(400).send('Missing licenseId or userId');
@@ -389,8 +389,11 @@ exports.addLogin = functions.https.onRequest((req, res) => {
         country,
         location: loc,
         browser,
+        browserVersion,
         os,
+        osVersion,
         device,
+        deviceType
       };
 
       await db.collection(`Licenses/${licenseId}/Logins`).add(loginData);

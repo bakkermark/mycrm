@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import { VDataTable } from 'vuetify/labs/VDataTable'
+import getUserLogins from '../../../composables/user/getUserLogins'
+import netherlandsIcon from "../../../assets/icons/flags/netherlands_icon.png";
+import germanyIcon from "../../../assets/icons/flags/germany_icon.png";
+import belgiumIcon from "../../../assets/icons/flags/belgium_icon.png";
+import luxembourgIcon from "../../../assets/icons/flags/luxembourg_icon.png";
+import franceIcon from "../../../assets/icons/flags/france_icon.png";
+
+// Get current user's licenseId and userId. It must be dynamic, this is just a sample.
+const licenseId = 'KDjghg7EvDApqu46yoIw';
+const userId = 'nDj8Itux38XGHvP1BnSkH2pjhw43';
+
+// Initialize composable
+const { data: recentLogins, error, load } = getUserLogins(licenseId, userId);
 
 const recentDevicesHeaders = [
   {
@@ -9,10 +22,17 @@ const recentDevicesHeaders = [
   {
     title: 'DEVICE',
     key: 'device',
+  },{
+    title: 'OS',
+    key: 'os',
   },
   {
     title: 'LOCATION',
     key: 'city',
+  },
+  {
+    title: 'REGION',
+    key: 'region',
   },
   {
     title: 'COUNTRY',
@@ -24,41 +44,84 @@ const recentDevicesHeaders = [
   },
 ]
 
-const recentLogins = [ 
-  {
-    browser: 'Chrome on macOS',
-    device: 'Apple iMac',
-    city: 'New York, NY',
-    country: 'USA',
-    createdAt: '28 Apr 2022, 18:20',
-    deviceIcon: {
-      icon: 'tabler-brand-apple',
-      color: 'secondary',
-    },
-  },
-  {
-    browser: 'Chrome on Windows',
-    device: 'HP Spectre 360',
-    city: 'Groningen',
-    country: 'The Netherlands',
-    createdAt: '20 Apr 2022, 10:20',
-    deviceIcon: {
-      icon: 'tabler-brand-windows',
-      color: 'primary',
-    },
-  },
-  {
-    browser: 'Chrome on Android',
-    device: 'Oneplus 9 Pro',
-    city: 'Antwerpen',
-    country: 'Belgium',
-    createdAt: '16 Apr 2022, 04:20',
-    deviceIcon: {
-      icon: 'tabler-brand-android',
-      color: 'success',
-    },
-  },
-]
+const resolveBrowserIcon = (browser: string) => {
+  const browserLowerCase = browser.toLowerCase();
+  
+  if (browserLowerCase === 'chrome') {
+    return { color: 'success', icon: 'tabler-brand-chrome' };
+  }
+  if (browserLowerCase.includes('safari')) {
+    return { color: 'error', icon: 'tabler-brand-safari' };
+  }
+  if (browserLowerCase === 'edge') {
+    return { color: 'warning', icon: 'tabler-brand-edge' };
+  }
+  if (browserLowerCase === 'firefox') {
+    return { color: 'warning', icon: 'tabler-brand-firefox' };
+  }
+  if (browserLowerCase === 'opera') {
+    return { color: 'success', icon: 'tabler-brand-opera' };
+  }
+  if (browserLowerCase === 'android browser') {
+    return { color: 'success', icon: 'tabler-brand-android' };
+  }
+  return { color: 'default', icon: 'tabler-question-mark'};
+};
+
+const resolveDeviceIcon = (device: string) => {
+  const deviceLowerCase = device.toLowerCase();
+
+  if (deviceLowerCase === 'macintosh') {
+    return { color: 'default', icon: 'tabler-device-desktop' };
+  }
+  if (deviceLowerCase === 'iphone') {
+    return { color: 'default', icon: 'tabler-device-mobile' };
+  }
+  if (deviceLowerCase === 'ipad') {
+    return { color: 'default', icon: 'tabler-device-ipad' };
+  }
+  return {color: 'default', icon: 'tabler-devices-question'}
+};
+
+const resolveOsIcon = (os: string) => {
+  const osLowerCase = os.toLowerCase();
+
+  if (osLowerCase === 'mac os') {
+    return { color: 'default', icon: 'tabler-brand-apple' };
+  }
+  if (osLowerCase === 'ios') {
+    return { color: 'default', icon: 'tabler-brand-apple' };
+  }
+  if (osLowerCase === 'windows') {
+    return { color: 'default', icon: 'tabler-brand-windows' };
+  }
+  return { color: 'default', icon: 'tabler-question-mark'}
+};
+
+const resolveCountryIcon = (country: string) => {
+  const countryLowerCase = country.toLowerCase();
+
+  if (countryLowerCase === 'netherlands') {
+    return netherlandsIcon;
+  }
+  if (countryLowerCase === 'belgium') {
+    return belgiumIcon;
+  }
+  if (countryLowerCase === 'germany') {
+    return germanyIcon;
+  }
+  if (countryLowerCase === 'luxembourg') {
+    return luxembourgIcon;
+  }
+  if (countryLowerCase === 'france') {
+    return franceIcon;
+  }
+};
+
+// Fetch the data when component is mounted
+onMounted(() => {
+  load().catch(console.error);
+});
 </script>
 
 <template>
@@ -75,12 +138,42 @@ const recentLogins = [
           <div class="d-flex">
             <VIcon
               start
-              :icon="item.deviceIcon.icon"
-              :color="item.deviceIcon.color"
+              :icon="resolveBrowserIcon(item.browser).icon"
+              :color="resolveBrowserIcon(item.browser).color"
             />
             <span>
                 {{ item.browser }}
               </span>
+          </div>
+        </template>
+        <template #item.device="{ item }">
+          <div class="d-flex">
+            <VIcon
+              start
+              :icon="resolveDeviceIcon(item.device).icon"
+              :color="resolveDeviceIcon(item.device).color"
+            />
+            <span>
+                {{ item.device }}
+              </span>
+          </div>
+        </template>
+        <template #item.os="{ item }">
+          <div class="d-flex">
+            <VIcon
+              start
+              :icon="resolveOsIcon(item.os).icon"
+              :color="resolveOsIcon(item.os).color"
+            />
+            <span>
+                {{ item.os }}
+              </span>
+          </div>
+        </template>
+        <template #item.country="{ item }">
+          <div class="d-flex">
+            <img height="24px" :src="resolveCountryIcon(item.country)" class="mr-2"></img>
+            <span>{{ item.country }}</span>
           </div>
         </template>
         <!-- TODO Refactor this after vuetify provides proper solution for removing default footer -->

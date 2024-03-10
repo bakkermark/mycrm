@@ -64,20 +64,25 @@ const handleLogin = async () => {
         // Extracting browser, OS, and device information using UAParser
         const parser = new UAParser();
         const result = parser.getResult();
-        const browserInfo = `${result.browser.name} ${result.browser.version}`;
-        const osInfo = `${result.os.name} ${result.os.version}`;
-        const deviceInfo = result.device.model || 'unknown device';
+        const browser = `${result.browser.name}`;
+        const browserVersion = `${result.browser.version}`;
+        const os = `${result.os.name}`;
+        const osVersion = `${result.os.version}`;
+        const deviceModel = result.device.model || 'unknown device';
+        const deviceType = `${result.device.type || 'type unknown'}`;
+        
 
         // Prepare the data to send to your Cloud Function
         const loginInfo = {
           userId: user.uid,
-          licenseId: licenseCode, // You need to set this according to your application logic
-          browser: browserInfo,
-          os: osInfo,
-          device: deviceInfo,
+          licenseId: licenseCode,
+          browser: browser,
+          browserVersion: browserVersion,
+          os: os,
+          osVersion: osVersion,
+          device: deviceModel,
+          deviceType: deviceType
         };
-        
-        console.log("LogInfo: " + JSON.stringify(loginInfo))
 
         // Call your Cloud Function
         await fetch('https://us-central1-dev-mycrm.cloudfunctions.net/addLogin', {
