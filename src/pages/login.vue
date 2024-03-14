@@ -13,6 +13,7 @@ import { themeConfig } from '@themeConfig'
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { useLicenseStore } from '@/plugins/pinia/licenseStore';
+import { useUserStore } from '@/plugins/pinia/userStore';
 import { auth } from '@/firebase/config';
 import UAParser from 'ua-parser-js';
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
@@ -31,12 +32,7 @@ const form = ref({
   remember: false,
 })
 const isPasswordVisible = ref(false)
-const authThemeImg = useGenerateImageVariant(
-  authV2LoginIllustrationLight,
-  authV2LoginIllustrationDark,
-  authV2LoginIllustrationBorderedLight,
-  authV2LoginIllustrationBorderedDark,
-  true)
+const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark,true)
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 
 const handleLogin = async () => {
@@ -54,10 +50,15 @@ const handleLogin = async () => {
           const userDoc = querySnapshot.docs[0];
           const data = userDoc.data();
           licenseCode = data.licenseCode;
-          const licenseStore = useLicenseStore();
-          licenseStore.setLicenseCode(licenseCode);
-          console.log("User " + data.fullName +  " logged in succesfully and has licenseCode: " + data.licenseCode)
+          const userStore = useUserStore();
+          userStore.setUserId(data.id);
+          userStore.setUserRole(data.role);
+          userStore.setUserFullName(data.fullName);
+          userStore.setUserLicenseCode(licenseCode)
+          //TODO remove console.log
+          console.log("User " + data.fullName +  " logged in succesfully and has licenseCode: " + data.licenseCode + " and role " + data.role + " and userId " + data.id)
         } else {
+          // Write error to logfile.
           console.log("User not found or password incorrect.");
         }
         
@@ -70,7 +71,6 @@ const handleLogin = async () => {
         const osVersion = `${result.os.version}`;
         const deviceModel = result.device.model || 'unknown device';
         const deviceType = `${result.device.type || 'type unknown'}`;
-        
 
         // Prepare the data to send to your Cloud Function
         const loginInfo = {
@@ -97,12 +97,13 @@ const handleLogin = async () => {
             router.push({ name: 'root' });
           })
           .catch((error) => {
+            //TODO Write error to logfile.
             console.error('Error:', error);
           });
       }
     })
     .catch((error) => {
-      console.error("addLogin function failed:", error);
+      //TODO Write error to logfile.
       submittingData.value = false;
     });
   

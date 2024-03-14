@@ -6,10 +6,12 @@ import germanyIcon from "../../../assets/icons/flags/germany_icon.png";
 import belgiumIcon from "../../../assets/icons/flags/belgium_icon.png";
 import luxembourgIcon from "../../../assets/icons/flags/luxembourg_icon.png";
 import franceIcon from "../../../assets/icons/flags/france_icon.png";
+import { useUserStore } from '@/plugins/pinia/userStore';
 
-// Get current user's licenseId and userId. It must be dynamic, this is just a sample.
-const licenseId = 'KDjghg7EvDApqu46yoIw';
-const userId = 'nDj8Itux38XGHvP1BnSkH2pjhw43';
+// Accessing its state
+const userStore = useUserStore();
+const licenseId = userStore.userLicenseCode;
+const userId = userStore.userId;
 
 // Initialize composable
 const { data: recentLogins, error, load } = getUserLogins(licenseId, userId);

@@ -2,8 +2,8 @@
 import type {VForm} from "vuetify/components";
 import {ref as ref, onMounted, defineEmits} from 'vue';
 import {doc, setDoc, getDoc} from 'firebase/firestore';
-import {ref as fbRef, getDownloadURL, uploadBytes} from '@firebase/storage';
-import {projectFirestore, projectStorage} from '@/firebase/config';
+import {ref as fbRef, getDownloadURL, uploadBytes, deleteObject, getStorage} from '@firebase/storage';
+import {functions, projectFirestore, projectStorage} from '@/firebase/config';
 import getLicenses from "@/composables/getLicenses";
 import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
@@ -40,6 +40,8 @@ const userForm = reactive({
   selectedRole: '',
   avatar: ''
 });
+let oldAvatarUrl = '';
+let oldEmail = '';
 
 onMounted(async () => {
   await load(); // getLicenses
@@ -61,10 +63,12 @@ onMounted(async () => {
         userForm.firstName = userData.firstName;
         userForm.lastName = userData.lastName;
         userForm.email = userData.email;
+        oldEmail = userData.email;
         userForm.selectedRole = userData.role;
-        userForm.selectedLicenseHolder = userData.company + " - " + userData.licenseCode;
+        userForm.selectedLicenseHolder = userData.company + " (" + userData.licenseCode + ")";
         if (userData.avatar != null) {
           userForm.avatar = userData.avatar;
+          oldAvatarUrl = userData.avatar;
         }
         // Update the user id so other tabs come available in user/index.vue
         emit('userUpdated', userId);
@@ -106,74 +110,157 @@ const resetForm = () => {
   userForm.infix = ''
 }
 
+function getFilenameFromUrl(firebaseStorageUrl) {
+  if (firebaseStorageUrl.length > 0) {
+    const parsedUrl = new URL(firebaseStorageUrl);
+    const pathname = parsedUrl.pathname;
+
+    if (pathname) {
+      const parts = decodeURIComponent(pathname).split('/');
+      const filePath = parts.pop();
+
+      if (filePath) {
+        return filePath.split('/').pop();
+      }
+    }
+  }
+  return '';
+}
+
 const handleSubmit = async () => {
   if (refForm.value) {
     const validationResult = await refForm.value.validate();
     if (validationResult.valid) {
-      try {
-        // Try to add user to Firebase Auth
-        submittingData.value = true;
-        const functions = getFunctions();
-        const addUser = httpsCallable(functions, 'addUser');
-        const result = await addUser({email: userForm.email, password: password.value});
-        const response = result.data as ApiResponse;
-        // If an error occured inform user and stop.
-        if (!response.success) {
-          snackbarStore.showSnackbar({color: "error", message: t(response.message)})
-          return
+      let response: ApiResponse;
+      console.log("Current avatar: " + oldAvatarUrl)
+      console.log("Userform.avatar: " + userForm.avatar)
+      // If a new user is being added
+      if (!isEditing.value) {
+        try {
+          // Try to add user to Firebase Auth
+          submittingData.value = true;
+          const functions = getFunctions();
+          const addUser = httpsCallable(functions, 'addUser');
+          const result = await addUser({email: userForm.email, password: password.value});
+          response = result.data as ApiResponse;
+          // If an error occured inform user and stop.
+          if (!response.success) {
+            snackbarStore.showSnackbar({color: "error", message: t(response.message)})
+            return
+          }
+        } catch (err) {
+          snackbarStore.showSnackbar({color: "error", message: t("User could not be added. Details: " + err)})
         }
+      }
+      
+      // Determine where the uid came from
+      let uid: string | undefined;
+      if (!isEditing.value) {
+        uid = response.returnValue;
+      }
+      else {
+        uid = String(userId.value);
+      }
         
-        // If user is added succesfully to Firebase Auth then get License data. 
-        const uid = response.returnValue;
-        const companyIdSplit = userForm.selectedLicenseHolder.split(' (');
-        const companyName = companyIdSplit[0];
-        const licenseId = companyIdSplit[1].replace(')', '');
-        const licensesCollection = collection(projectFirestore, "Licenses");
-        const docRef = doc(licensesCollection, licenseId);
-        const docSnap = await getDoc(docRef);
-        let selectedPlan = '';
-        if (docSnap.exists()) {
-          const data = docSnap.data() as License;
-          selectedPlan = data.plan;
-        } else {
-          console.error("No such document with id " + licenseId);
-        }
-        
-        // Add avatar of user Firebase Storage
-        const file = refInputEl.value?.files[0];
-        let avatar = ''
-        if (file) {
-          const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
-          const snapshot = await uploadBytes(fileRef, file);
-          avatar = await getDownloadURL(snapshot.ref);
-        }
-        
-        // Add user to FireStore collection Users
-        const User = {
-          id: uid,
-          firstName: userForm.firstName,
-          infix: userForm.infix,
-          lastName: userForm.lastName,
-          fullName: [userForm.firstName, userForm.infix, userForm.lastName].filter(Boolean).join(" "),
-          email: userForm.email,
-          status: "Active",
-          role: userForm.selectedRole,
-          company: companyName,
-          licenseCode: licenseId,
-          plan: selectedPlan,
-          avatar: avatar,
-          createdAt: new Date()
-        }
+      // Determine company, licenseId and plan.
+      const companyIdSplit = userForm.selectedLicenseHolder.split(' (');
+      const companyName = companyIdSplit[0];
+      const licenseId = companyIdSplit[1].replace(')', '');
+      const licensesCollection = collection(projectFirestore, "Licenses");
+      const docRef = doc(licensesCollection, licenseId);
+      const docSnap = await getDoc(docRef);
+      let selectedPlan = '';
+      if (docSnap.exists()) {
+        const data = docSnap.data() as License;
+        selectedPlan = data.plan;
+      }
+      
+      // Add or update avatar of user Firebase Storage
+      const file = refInputEl.value?.files[0];
+      let avatar = ''
+      if (file) {
+        console.log("Is er een file geselecteerd? " + file.name)
+        if (oldAvatarUrl) {
+          console.log("Er is een oldAvatarUrl " + oldAvatarUrl)
+          // Delete the old avatar file on Firebase storage
+          const storage = getStorage();
+          const url = new URL(oldAvatarUrl);
+          const partialPath = url.pathname;
+          const filename = decodeURIComponent(partialPath.substring(partialPath.lastIndexOf('/') + 1));
+          const oldAvatarRef = fbRef(storage, filename);
+          deleteObject(oldAvatarRef).then(() => {
+            console.log("OldAvatar " + oldAvatarRef + " verwijderd omdt nieuwe avatar is geslecteerd."
+            )
 
-        if (uid) {
-          const usersCollection = collection(projectFirestore, "Users");
-          await setDoc(doc(usersCollection, uid), User)
+          }).catch((error) => {
+            //TODO Write to log
+            console.error(`Failed to remove file ${oldAvatarUrl}:`, error);
+          });
+        }
+        
+        // Now add a new avatar file to Firebase storage.
+        const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
+        const snapshot = await uploadBytes(fileRef, file);
+        avatar = await getDownloadURL(snapshot.ref);
+        console.log("Nieuwe avatar " + avatar + " is geupload.")
+      } else {
+        if (oldAvatarUrl != userForm.avatar) {
+          // Delete the old avatar file from Firebase storage.
+          const storage = getStorage();
+          const url = new URL(oldAvatarUrl);
+          const partialPath = url.pathname;
+          const filename = decodeURIComponent(partialPath.substring(partialPath.lastIndexOf('/') + 1));
+          const oldAvatarRef = fbRef(storage, filename);
+          deleteObject(oldAvatarRef).then(() => {
+          console.log("oldAvatarUrl file is weggehaald omdat er geen file is geselecteerd en wel een avatar was.")
+          }).catch((error) => {
+            //TODO Write to log
+            console.error(`Failed to remove file ${oldAvatarUrl}:`, error);
+          });
+        }
+        else {
+          avatar = oldAvatarUrl;
+        }
+      }
+      
+      // Add or update user to FireStore collection Users
+      const User = {
+        id: uid,
+        firstName: userForm.firstName,
+        infix: userForm.infix,
+        lastName: userForm.lastName,
+        fullName: [userForm.firstName, userForm.infix, userForm.lastName].filter(Boolean).join(" "),
+        email: userForm.email,
+        status: "Active",
+        role: userForm.selectedRole,
+        company: companyName,
+        licenseCode: licenseId,
+        plan: selectedPlan,
+        avatar: avatar,
+        createdAt: new Date()
+      }
+      
+      try {
+        // Update also Firebase Auth user email if email has changed.
+        if (oldEmail != userForm.email) {
+          const updateUserEmail = httpsCallable(functions, 'updateUserEmail');
+          const result = await updateUserEmail({uid: uid, email: userForm.email});
+          response = result.data as ApiResponse;
+        }
+        const usersCollection = collection(projectFirestore, "Users");
+        const userDoc = doc(usersCollection, uid);
+        if (!isEditing.value) {
+          await setDoc(userDoc, User);
+          console.log("New user met avavatar " + avatar + " created in users.")
           emit('userUpdated', uid);
-          snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")})
+          snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")});
+        } else {
+          await setDoc(userDoc, User, { merge: true });
+          console.log("User geupdate met avavatar " + avatar + " in users.")
+          snackbarStore.showSnackbar({color: "success", message: t("User has been updated successfully.")});
         }
       } catch (err) {
-        snackbarStore.showSnackbar({color: "error", message: t("User could not be added. Details: " + err)})
-        console.error("Error: " + err);
+        snackbarStore.showSnackbar({color: "error", message: t("User could not be added. Details: " + err)});
       } finally {
         submittingData.value = false;
       }

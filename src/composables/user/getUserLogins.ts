@@ -8,6 +8,7 @@ const getData = (licenseId: string, userId: string) => {
   const data: Ref<UserLogin[]> = ref([]);
   const error: Ref<string | null> = ref(null);
 
+  console.log("Getting data for " + userId + " with licenseId " + licenseId + " from " + firebaseCollectionName)
   const load = async () => {
     try {
       const collectionReference = collection(projectFirestore, firebaseCollectionName);

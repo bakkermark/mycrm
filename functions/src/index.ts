@@ -181,7 +181,6 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 // --------------------------------------------------------------------------
 // FUNCTION: addUser
 // --------------------------------------------------------------------------
-
 export const addUser = functions.https.onCall(async (data, context) => {
   const { email, password } = data;
   console.log("Email: " + email)
@@ -404,4 +403,43 @@ exports.addLogin = functions.https.onRequest((req, res) => {
       res.status(500).send('Error adding login');
     }
   });
+});
+
+// --------------------------------------------------------------------------
+// FUNCTION: updateUserEmail
+// --------------------------------------------------------------------------
+exports.updateUserEmail = functions.https.onCall(async (data, context) => {
+  try {
+    // Ensure the user is authenticated.
+    if (!context.auth) {
+      return {
+        success: false,
+        message: 'You must be logged in to execute this action.',
+      };
+    }
+    console.log("User has authorization to execute this function.")
+
+    // Ensure you received correct parameters.
+    console.log("data.email: " + data.email)
+    console.log("data.uid: " + data.uid)
+    if (!data.email || !data.uid) {
+      return {
+        success: false,
+        message: 'User email can not be updated. Contact helpdesk.',
+      };
+    }
+    console.log("Correct parameters are passed.")
+
+    // Update the user.
+    console.log("Start updating email ...")
+    await admin.auth().updateUser(data.uid, {email: data.email});
+    console.log("User email has been updated.")
+    
+    // Return a success message.
+    console.log("User email updated succesfully. ")
+    return { success: true, message: 'User email updated successfully.', };
+  } catch (error) {
+    console.error('Error updating user email:', error);
+    return { success: false, message: 'Error updating user email. Details: ' + error };
+  }
 });
