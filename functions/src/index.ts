@@ -316,7 +316,8 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
       const result = await mailerSend.email.send(emailParams);
       const messageId = result.headers['x-message-id'];
       //TODO EmailsSend should be subcollection of licenses. Every license has own archive.
-      const documentRef = db.collection('EmailArchive').doc(messageId);
+      const collectionPath = 'Licenses/' + data.licenseId + '/EmailArchive';
+      const documentRef = db.collection(collectionPath).doc(messageId);
       await documentRef.set({
         messageId: messageId,
         fromEmail: data.fromEmail,
@@ -328,7 +329,7 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
         sendDateTime: new Date(),
         status: 'Send',
       });
-      console.log("Email archived.")
+      console.log("Email archived in " + collectionPath + " under id " + messageId)
       return { success: true, message: 'Email sent successfully.' };
     } catch (error) {
       console.error('Error processing email:', error);

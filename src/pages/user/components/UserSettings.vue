@@ -110,35 +110,16 @@ const resetForm = () => {
   userForm.infix = ''
 }
 
-function getFilenameFromUrl(firebaseStorageUrl) {
-  if (firebaseStorageUrl.length > 0) {
-    const parsedUrl = new URL(firebaseStorageUrl);
-    const pathname = parsedUrl.pathname;
-
-    if (pathname) {
-      const parts = decodeURIComponent(pathname).split('/');
-      const filePath = parts.pop();
-
-      if (filePath) {
-        return filePath.split('/').pop();
-      }
-    }
-  }
-  return '';
-}
-
 const handleSubmit = async () => {
   if (refForm.value) {
     const validationResult = await refForm.value.validate();
     if (validationResult.valid) {
+      submittingData.value = true;
       let response: ApiResponse;
-      console.log("Current avatar: " + oldAvatarUrl)
-      console.log("Userform.avatar: " + userForm.avatar)
       // If a new user is being added
       if (!isEditing.value) {
         try {
           // Try to add user to Firebase Auth
-          submittingData.value = true;
           const functions = getFunctions();
           const addUser = httpsCallable(functions, 'addUser');
           const result = await addUser({email: userForm.email, password: password.value});
@@ -179,9 +160,7 @@ const handleSubmit = async () => {
       const file = refInputEl.value?.files[0];
       let avatar = ''
       if (file) {
-        console.log("Is er een file geselecteerd? " + file.name)
         if (oldAvatarUrl) {
-          console.log("Er is een oldAvatarUrl " + oldAvatarUrl)
           // Delete the old avatar file on Firebase storage
           const storage = getStorage();
           const url = new URL(oldAvatarUrl);
@@ -189,9 +168,7 @@ const handleSubmit = async () => {
           const filename = decodeURIComponent(partialPath.substring(partialPath.lastIndexOf('/') + 1));
           const oldAvatarRef = fbRef(storage, filename);
           deleteObject(oldAvatarRef).then(() => {
-            console.log("OldAvatar " + oldAvatarRef + " verwijderd omdt nieuwe avatar is geslecteerd."
-            )
-
+            
           }).catch((error) => {
             //TODO Write to log
             console.error(`Failed to remove file ${oldAvatarUrl}:`, error);
@@ -202,7 +179,6 @@ const handleSubmit = async () => {
         const fileRef = fbRef(projectStorage, 'Avatars/' + uid + '.' + file.name.split('.').pop());
         const snapshot = await uploadBytes(fileRef, file);
         avatar = await getDownloadURL(snapshot.ref);
-        console.log("Nieuwe avatar " + avatar + " is geupload.")
       } else {
         if (oldAvatarUrl != userForm.avatar) {
           // Delete the old avatar file from Firebase storage.
@@ -212,7 +188,6 @@ const handleSubmit = async () => {
           const filename = decodeURIComponent(partialPath.substring(partialPath.lastIndexOf('/') + 1));
           const oldAvatarRef = fbRef(storage, filename);
           deleteObject(oldAvatarRef).then(() => {
-          console.log("oldAvatarUrl file is weggehaald omdat er geen file is geselecteerd en wel een avatar was.")
           }).catch((error) => {
             //TODO Write to log
             console.error(`Failed to remove file ${oldAvatarUrl}:`, error);
@@ -245,18 +220,17 @@ const handleSubmit = async () => {
         if (oldEmail != userForm.email) {
           const updateUserEmail = httpsCallable(functions, 'updateUserEmail');
           const result = await updateUserEmail({uid: uid, email: userForm.email});
+          //TODO Do someting with the result?
           response = result.data as ApiResponse;
         }
         const usersCollection = collection(projectFirestore, "Users");
-        const userDoc = doc(usersCollection, uid);
+        const userDoc = doc(usersCollection, uid!);
         if (!isEditing.value) {
           await setDoc(userDoc, User);
-          console.log("New user met avavatar " + avatar + " created in users.")
           emit('userUpdated', uid);
           snackbarStore.showSnackbar({color: "success", message: t("User has been added successfully.")});
         } else {
           await setDoc(userDoc, User, { merge: true });
-          console.log("User geupdate met avavatar " + avatar + " in users.")
           snackbarStore.showSnackbar({color: "success", message: t("User has been updated successfully.")});
         }
       } catch (err) {

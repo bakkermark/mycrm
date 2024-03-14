@@ -50,7 +50,8 @@ export const sendTemplateEmail = async (emailData: emailServiceInputData): Promi
       fromEmail: 'info@multimediamarkers.com',
       fromEmailName: 'MultiMediaMarkers | Augmented Reality Apps',
       subject: emailTemplate.subject,
-      html: htmlUpdated
+      html: htmlUpdated,
+      licenseId: licenseId
     };
 
     // Send the email
