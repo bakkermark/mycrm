@@ -7,11 +7,14 @@ export interface License {
   email: string;
   emailSignature?: string;
   firstName: string;
+  fullName: string;
   id: string;
   infix?: string;
   lastName: string;
   plan: string;
   postalCode?: string;
-  state?: string
+  state?: string;
+  status: string;
+  subscriptionStatus: string;
   website?: string;
 }

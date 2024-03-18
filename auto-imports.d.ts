@@ -416,7 +416,6 @@ declare module 'vue' {
     readonly getContacts: UnwrapRef<typeof import('./src/composables/getContacts')['default']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
-    readonly getLicenses: UnwrapRef<typeof import('./src/composables/getLicenses')['default']>
     readonly getUsers: UnwrapRef<typeof import('./src/composables/getUsers')['default']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
@@ -763,7 +762,6 @@ declare module '@vue/runtime-core' {
     readonly getContacts: UnwrapRef<typeof import('./src/composables/getContacts')['default']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
-    readonly getLicenses: UnwrapRef<typeof import('./src/composables/getLicenses')['default']>
     readonly getUsers: UnwrapRef<typeof import('./src/composables/getUsers')['default']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>

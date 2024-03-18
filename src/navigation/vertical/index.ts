@@ -6,7 +6,7 @@ export default [
   },
   {
     title: 'Licenses',
-    icon: { icon: 'tabler-file-certificate' },
+    icon: { icon: 'tabler-certificate-2' },
     children: [
       { title: 'List', to: 'license-list' },
       { title: 'Add', to: 'license-add' },
