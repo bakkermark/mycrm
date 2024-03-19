@@ -57,6 +57,10 @@ const headers = [
     key: 'id',
   },
   {
+    title: 'Users',
+    key: 'countUsers',
+  },
+  {
     title: 'Plan',
     key: 'plan',
   },
@@ -308,6 +312,14 @@ const resolveActionIconUser = (status: string) => {
   if (statusLowerCase === 'inactive') return { color: 'success', icon: 'tabler-certificate-2' };
   return { color: 'error', icon: 'tabler-certificate-2-off' };
 };
+
+const resolveCountUsersIcon = (count: number) => {
+  if (count > 1) return { color: '', icon: 'tabler-users' };
+  if (count === 0) return { color: 'error', icon: 'tabler-user-off' };
+  return { color: '', icon: 'tabler-user' };
+};
+
+
 
 const deleteLicense = async (id: string) => {
   // const license = licensesData.value.find(license => license.id === id);
@@ -572,16 +584,11 @@ const widgetData = ref([
         <!-- 👉 Role -->
         <template #item.subscriptionStatus="{ item }">
           <div class="d-flex align-center gap-4">
-            <VAvatar
-              :size="30"
-              :color="resolveLicenseSubscriptionStatusVariant(item.subscriptionStatus).color"
-              variant="tonal"
-            >
               <VIcon
                 :size="20"
                 :icon="resolveLicenseSubscriptionStatusVariant(item.subscriptionStatus).icon"
+                :color="resolveLicenseSubscriptionStatusVariant(item.subscriptionStatus).color"
               />
-            </VAvatar>
             <span class="text-capitalize">{{ item.subscriptionStatus }}</span>
           </div>
         </template>
@@ -589,6 +596,18 @@ const widgetData = ref([
         <!-- Plan -->
         <template #item.plan="{ item }">
           <span class="text-capitalize font-weight-medium">{{ item.plan }}</span>
+        </template>
+
+        <!-- 👉 Users -->
+        <template #item.countUsers="{ item }">
+          <div class="d-flex align-center gap-4">
+            <VIcon
+              :size="20"
+              :icon="resolveCountUsersIcon(item.countUsers).icon"
+              :color="resolveCountUsersIcon(item.countUsers).color"
+            />
+            <span class="text-capitalize">{{ item.countUsers }}</span>
+          </div>
         </template>
 
         <!-- Status -->

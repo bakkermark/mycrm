@@ -62,6 +62,17 @@
               require
             />
           </VCol>
+          <VCol cols="12" md="6">
+            <AppSelect
+              v-model="selectedSubscriptionStatus"
+              :items="subscriptionStatus"
+              :rules="[requiredValidator]"
+              placeholder="Select a subscription status ..."
+              label="Subscription status"
+              name="selectSubscriptionStatus"
+              require
+            />
+          </VCol>
           <VCol cols="12">
             <VCol cols="12">
               <VBtn type="submit" class="me-2" :disabled="submittingData">
@@ -88,7 +99,7 @@ import {projectFirestore} from '@/firebase/config'
 import AppTextField from '../../../@core/components/app-form-elements/AppTextField.vue'
 import type {VForm} from 'vuetify/components'
 import {useSnackbarStore} from '@/plugins/pinia/snackbarStore';
-import { useI18n } from 'vue-i18n';
+import {useI18n} from 'vue-i18n';
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 
 const { t } = useI18n();
@@ -108,11 +119,13 @@ const postalCode = ref('')
 const city = ref('')
 const state = ref('')
 const countries = ['Netherlands', 'Germany', 'Belgium']
+const subscriptionStatus = ['Active', 'Arrears', 'Cancelled', 'Expired', 'Pending', 'Paused', 'Renewing', 'Trial']
 const selectedCountry = ref('')
 const website = ref('')
 const copyright = ref('')
 const emailSignature = ref('')
 const submittingData = ref(false)
+const selectedSubscriptionStatus = ref('Active')
 
 const handleSubmit = async () => {
   if (refForm.value) {
@@ -135,7 +148,9 @@ const handleSubmit = async () => {
           country: selectedCountry.value,
           website: website.value,
           copyright: copyright.value,
-          emailSignature: emailSignature.value
+          emailSignature: emailSignature.value,
+          status: 'Active',
+          subscriptionStatus: selectedSubscriptionStatus.value
         }
         const docRef = await addDoc(collection(projectFirestore, firebaseCollectionName), data)
         const snackBarPayload = { color: "success", message: t("License has been added succesfully.") }
