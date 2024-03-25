@@ -14,7 +14,7 @@ export interface License {
   plan: string;
   postalCode?: string;
   state?: string;
-  status: string;
+  status: "Inactive" | "Active";
   subscriptionStatus: string;
   website?: string;
 }

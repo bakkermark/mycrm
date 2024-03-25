@@ -4,7 +4,7 @@ import {ref as ref, onMounted, defineEmits} from 'vue';
 import {doc, setDoc, getDoc} from 'firebase/firestore';
 import {ref as fbRef, getDownloadURL, uploadBytes, deleteObject, getStorage} from '@firebase/storage';
 import {functions, projectFirestore, projectStorage} from '@/firebase/config';
-import getLicenses from "@/composables/getLicenses";
+import getLicenses from "../../../composables/license/getLicenses";
 import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";

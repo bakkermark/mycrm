@@ -4,37 +4,37 @@
       <VForm ref="refForm" @submit.prevent="handleSubmit">
         <VRow>
           <VCol cols="12" md="4">
-            <AppTextField v-model="firstName" label="First Name" placeholder="Type in first name ..." :rules="[requiredValidator]"/>
+            <AppTextField v-model="licenseForm.firstName" label="First Name" placeholder="Type in first name ..." :rules="[requiredValidator]"/>
           </VCol>
           <VCol cols="12" md="2">
-            <AppTextField v-model="infix" label="Infix" placeholder="Type in infix ... "/>
+            <AppTextField v-model="licenseForm.infix" label="Infix" placeholder="Type in infix ... "/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="lastName" label="Last Name" placeholder="Type in last name ..."
+            <AppTextField v-model="licenseForm.lastName" label="Last Name" placeholder="Type in last name ..."
                           :rules="[requiredValidator]"/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="email" label="Email" placeholder="Type in email address ..." :rules="[requiredValidator, emailValidator]"/>
+            <AppTextField v-model="licenseForm.email" label="Email" placeholder="Type in email address ..." :rules="[requiredValidator, emailValidator]"/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="company" label="Company name" placeholder="Type in company name ..."
+            <AppTextField v-model="licenseForm.company" label="Company name" placeholder="Type in company name ..."
                           :rules="[requiredValidator]"/>
           </VCol>
           <VCol cols="12" md="4">
-            <AppTextField v-model="address" label="Address" placeholder="Type in address ..."/>
+            <AppTextField v-model="licenseForm.address" label="Address" placeholder="Type in address ..."/>
           </VCol>
           <VCol cols="12" md="2">
-            <AppTextField v-model="postalCode" label="Postalcode" placeholder="Type in postalcode ... "/>
+            <AppTextField v-model="licenseForm.postalCode" label="Postalcode" placeholder="Type in postalcode ... "/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="state" label="State" placeholder="Type in state ..."/>
+            <AppTextField v-model="licenseForm.state" label="State" placeholder="Type in state ..."/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="city" label="City" placeholder="Type in city ..." />
+            <AppTextField v-model="licenseForm.city" label="City" placeholder="Type in city ..." />
           </VCol>
           <VCol cols="12" md="6">
             <AppSelect
-              v-model="selectedCountry"
+              v-model="licenseForm.country"
               :items="countries"
               placeholder="Select a country ..."
               label="Country"
@@ -43,17 +43,17 @@
             />
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="website" label="Website" placeholder="Type in website ..."/>
+            <AppTextField v-model="licenseForm.website" label="Website" placeholder="Type in website ..."/>
           </VCol>
           <VCol cols="12" md="6">
-            <AppTextField v-model="copyright" label="Copyright text" placeholder="Type in copyright text ..."/>
+            <AppTextField v-model="licenseForm.copyright" label="Copyright text" placeholder="Type in copyright text ..."/>
           </VCol>
           <VCol cols="12" md="12">
-            <AppTextField v-model="emailSignature" label="Email signature" placeholder="Type in email signature ..."/>
+            <AppTextField v-model="licenseForm.emailSignature" label="Email signature" placeholder="Type in email signature ..."/>
           </VCol>
           <VCol cols="12" md="6">
             <AppSelect
-              v-model="selectedPlan"
+              v-model="licenseForm.plan"
               :items="plans"
               :rules="[requiredValidator]"
               placeholder="Select a plan ..."
@@ -64,7 +64,7 @@
           </VCol>
           <VCol cols="12" md="6">
             <AppSelect
-              v-model="selectedSubscriptionStatus"
+              v-model="licenseForm.subscriptionStatus"
               :items="subscriptionStatus"
               :rules="[requiredValidator]"
               placeholder="Select a subscription status ..."
@@ -78,7 +78,7 @@
               <VBtn type="submit" class="me-2" :disabled="submittingData">
                 <VProgressCircular v-if="submittingData" :size="20" :width="2" class="mr-2" indeterminate/>
                 Save
-                <VTooltip open-delay="500" activator="parent" location="top">Save the user data</VTooltip>
+                <VTooltip open-delay="500" activator="parent" location="top">Save the license data</VTooltip>
               </VBtn>
               <VBtn :disabled="submittingData" color="secondary" type="reset" variant="tonal">
                 Reset
@@ -93,39 +93,132 @@
 </template>
 
 <script lang="ts" setup>
-import {defineEmits, ref} from 'vue';
-import {addDoc, collection} from 'firebase/firestore'
+import {defineEmits, onMounted, ref, watchEffect} from 'vue';
+import {collection, doc, getDoc, setDoc} from 'firebase/firestore'
 import {projectFirestore} from '@/firebase/config'
 import AppTextField from '../../../@core/components/app-form-elements/AppTextField.vue'
 import type {VForm} from 'vuetify/components'
 import {useSnackbarStore} from '@/plugins/pinia/snackbarStore';
 import {useI18n} from 'vue-i18n';
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
+import {useRoute} from "vue-router";
+import {License} from "@/types/licenseType";
 
+const isEditing = ref(false);
 const { t } = useI18n();
 const emit = defineEmits(['licenseUpdated']);
 const firebaseCollectionName = 'Licenses'
 const snackbar = useSnackbarStore();
 const refForm = ref<VForm | null>(null);
-const firstName = ref('')
-const infix = ref('')
-const lastName = ref('')
-const email = ref('')
-const company = ref('')
 const plans = ['Basic', 'Extended', 'Platinum']
-const selectedPlan = ref('')
-const address = ref('')
-const postalCode = ref('')
-const city = ref('')
-const state = ref('')
 const countries = ['Netherlands', 'Germany', 'Belgium']
 const subscriptionStatus = ['Active', 'Arrears', 'Cancelled', 'Expired', 'Pending', 'Paused', 'Renewing', 'Trial']
-const selectedCountry = ref('')
-const website = ref('')
-const copyright = ref('')
-const emailSignature = ref('')
 const submittingData = ref(false)
-const selectedSubscriptionStatus = ref('Active')
+const route = useRoute();
+const snackbarStore = useSnackbarStore();
+const licenseId = ref<string | null>(null);
+const licenseForm = reactive({
+  status: '',
+  firstName: '',
+  infix: '',
+  lastName: '',
+  email: '',
+  company: '',
+  address: '',
+  postalCode: '',
+  state: '',
+  city: '',
+  country: '',
+  website: '',
+  copyright: '',
+  emailSignature: '',
+  plan: '',
+  subscriptionStatus: '',
+  countUsers: 0
+});
+
+const resetForm = () => {
+  licenseForm.status = '';
+  licenseForm.firstName = '';
+  licenseForm.infix = '';
+  licenseForm.lastName = '';
+  licenseForm.email = '';
+  licenseForm.company = '';
+  licenseForm.address = '';
+  licenseForm.postalCode = '';
+  licenseForm.state = '';
+  licenseForm.city = '';
+  licenseForm.country = '';
+  licenseForm.website = '';
+  licenseForm.copyright = '';
+  licenseForm.emailSignature = '';
+  licenseForm.plan = '';
+  licenseForm.subscriptionStatus = '';
+  licenseForm.countUsers = 0;
+}
+
+watchEffect(async () => {
+  // Check if there is a query parameter id in the url.
+  licenseId.value = route.query.id as string | null;
+  if (licenseId.value == null) {
+    isEditing.value = false;
+    resetForm()
+    emit('licenseUpdated', '');
+    return;
+  } else {
+    isEditing.value = true;
+
+    try {
+      const licenseDocRef = doc(projectFirestore, firebaseCollectionName, String(licenseId.value));
+      const licenseDocSnap = await getDoc(licenseDocRef);
+      if (licenseDocSnap.exists()) {
+        const licenseData = licenseDocSnap.data() as License;
+        licenseForm.status = licenseData.status;
+        licenseForm.firstName = licenseData.firstName;
+        if (licenseData.infix != null) {
+          licenseForm.infix = licenseData.infix;
+        }
+        licenseForm.lastName = licenseData.lastName;
+        licenseForm.email = licenseData.email;
+        licenseForm.company = licenseData.company;
+        if (licenseData.address != null) {
+          licenseForm.address = licenseData.address;
+        }
+        if (licenseData.postalCode != null) {
+          licenseForm.postalCode = licenseData.postalCode;
+        }
+        if (licenseData.state != null) {
+          licenseForm.state = licenseData.state;
+        }
+        if (licenseData.city != null) {
+          licenseForm.city = licenseData.city;
+        }
+        if (licenseData.country != null) {
+          licenseForm.country = licenseData.country;
+        }
+        if (licenseData.website != null) {
+          licenseForm.website = licenseData.website;
+        }
+        if (licenseData.copyright != null) {
+          licenseForm.copyright = licenseData.copyright;
+        }
+        if (licenseData.emailSignature != null) {
+          licenseForm.emailSignature = licenseData.emailSignature;
+        }
+        licenseForm.plan = licenseData.plan;
+        licenseForm.subscriptionStatus = licenseData.subscriptionStatus;
+        // Update the license id so other tabs come available in user/index.vue
+        emit('licenseUpdated', licenseId);
+      } else {
+        snackbarStore.showSnackbar({color: "error", message: t("Error fetching data. Please try again.")})
+        return
+      }
+    } catch (err) {
+      snackbarStore.showSnackbar({color: "error", message: t("Error fetching data. Please try again.")})
+      return
+    }
+  }
+});
 
 const handleSubmit = async () => {
   if (refForm.value) {
@@ -133,35 +226,46 @@ const handleSubmit = async () => {
     if (validationResult.valid) {
       submittingData.value = true;
       try {
-        const data = {
-          company: company.value,
-          firstName: firstName.value,
-          infix: infix.value,
-          lastName: lastName.value,
-          fullName: [firstName.value, infix.value, lastName.value].filter(Boolean).join(" "),
-          email: email.value,
-          plan: selectedPlan.value,
-          address: address.value,
-          postalCode: postalCode.value,
-          city: city.value,
-          state: state.value,
-          country: selectedCountry.value,
-          website: website.value,
-          copyright: copyright.value,
-          emailSignature: emailSignature.value,
-          status: 'Active',
-          subscriptionStatus: selectedSubscriptionStatus.value
+        const License = {
+          company: licenseForm.company,
+          firstName: licenseForm.firstName,
+          infix: licenseForm.infix,
+          lastName: licenseForm.lastName,
+          fullName: [licenseForm.firstName, licenseForm.infix, licenseForm.lastName].filter(Boolean).join(" "),
+          email: licenseForm.email,
+          plan: licenseForm.plan,
+          address: licenseForm.address,
+          postalCode: licenseForm.postalCode,
+          city: licenseForm.city,
+          state: licenseForm.state,
+          country: licenseForm.country,
+          website: licenseForm.website,
+          copyright: licenseForm.copyright,
+          emailSignature: licenseForm.emailSignature,
+          status: licenseForm.status,
+          subscriptionStatus: licenseForm.subscriptionStatus
+        };
+        try {
+          const licensesCollection = collection(projectFirestore, firebaseCollectionName);
+          console.log("LicenseId: " + licenseId.value)
+          const licenseDoc = doc(licensesCollection, licenseId.value!);
+          console.log("Check value isEditing: " + isEditing.toString())
+          if (!isEditing.value) {
+            await setDoc(licenseDoc, License);
+            emit('licenseUpdated', licenseId);
+            snackbarStore.showSnackbar({color: "success", message: t("License has been added successfully.")});
+          } else {
+            await setDoc(licenseDoc, License, {merge: true});
+            snackbarStore.showSnackbar({color: "success", message: t("License has been updated successfully.")});
+          }
+        } catch (err) {
+          snackbarStore.showSnackbar({color: "error", message: t("License could not be added. Details: " + err)});
+        } finally {
+          submittingData.value = false;
         }
-        const docRef = await addDoc(collection(projectFirestore, firebaseCollectionName), data)
-        const snackBarPayload = { color: "success", message: t("License has been added succesfully.") }
-        snackbar.showSnackbar(snackBarPayload)
-        const Id = docRef.id;
-        emit('licenseUpdated', Id);
-      } catch(err) {
-        const snackBarPayload = { color: "error", message: t("License could not be added. Details: " + err) }
-        snackbar.showSnackbar(snackBarPayload)
+      } catch (err) {
+        console.error(err);
       }
-      submittingData.value = false;
     }
   }
 };
