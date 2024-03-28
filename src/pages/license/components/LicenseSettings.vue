@@ -243,18 +243,24 @@ const handleSubmit = async () => {
           copyright: licenseForm.copyright,
           emailSignature: licenseForm.emailSignature,
           status: licenseForm.status,
-          subscriptionStatus: licenseForm.subscriptionStatus
+          subscriptionStatus: licenseForm.subscriptionStatus,
+          countUsers: licenseForm.countUsers
         };
         try {
           const licensesCollection = collection(projectFirestore, firebaseCollectionName);
-          console.log("LicenseId: " + licenseId.value)
-          const licenseDoc = doc(licensesCollection, licenseId.value!);
+          console.log("LicenseId before add: " + licenseId.value)
           console.log("Check value isEditing: " + isEditing.toString())
           if (!isEditing.value) {
+            License.status = "Active";
+            License.countUsers = 0;
+            const licenseDoc = doc(licensesCollection);
             await setDoc(licenseDoc, License);
+            //licenseId.value = licenseDoc.id;
             emit('licenseUpdated', licenseId);
+            console.log("LicenseId after add: " + licenseId.value)
             snackbarStore.showSnackbar({color: "success", message: t("License has been added successfully.")});
           } else {
+            const licenseDoc = doc(licensesCollection, licenseId.value!);
             await setDoc(licenseDoc, License, {merge: true});
             snackbarStore.showSnackbar({color: "success", message: t("License has been updated successfully.")});
           }

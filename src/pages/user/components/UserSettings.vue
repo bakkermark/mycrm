@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {License} from "@/types/licenseType";
 import {ApiResponse} from "@/types/apiResponseType";
-import { collection } from "firebase/firestore";
+import { collection, updateDoc, increment } from "firebase/firestore";
 import {useRoute} from "vue-router";
 import {User} from "@/pages/user/userTypes";
 
@@ -116,13 +116,19 @@ const handleSubmit = async () => {
     if (validationResult.valid) {
       submittingData.value = true;
       let response: ApiResponse;
+      
+      // Determine company, licenseId and plan.
+      const companyIdSplit = userForm.selectedLicenseHolder.split(' (');
+      const companyName = companyIdSplit[0];
+      const licenseId = companyIdSplit[1].replace(')', '');
+      
       // If a new user is being added
       if (!isEditing.value) {
         try {
           // Try to add user to Firebase Auth
           const functions = getFunctions();
           const addUser = httpsCallable(functions, 'addUser');
-          const result = await addUser({email: userForm.email, password: password.value});
+          const result = await addUser({email: userForm.email, password: password.value, licenseCode: licenseId });
           response = result.data as ApiResponse;
           // If an error occured inform user and stop.
           if (!response.success) {
@@ -142,11 +148,7 @@ const handleSubmit = async () => {
       else {
         uid = String(userId.value);
       }
-        
-      // Determine company, licenseId and plan.
-      const companyIdSplit = userForm.selectedLicenseHolder.split(' (');
-      const companyName = companyIdSplit[0];
-      const licenseId = companyIdSplit[1].replace(')', '');
+      
       const licensesCollection = collection(projectFirestore, "Licenses");
       const docRef = doc(licensesCollection, licenseId);
       const docSnap = await getDoc(docRef);

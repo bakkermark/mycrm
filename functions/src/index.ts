@@ -136,6 +136,15 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
       };
     }
 
+    const userLicenseCode = userData.licenseCode
+    if (userLicenseCode) {
+      const licenseDocRef = db.collection('Licenses').doc(userLicenseCode)
+      await licenseDocRef.update({
+        countUsers: admin.firestore.FieldValue.increment(-1)
+      })
+      console.log("License " + userLicenseCode + " countUsers decremented.")
+    }
+    
     await admin.auth().deleteUser(uid)
     console.log("User " + userData.fullName + " deleted from FB Auth.")
     await db.collection('Users').doc(uid).delete()
@@ -182,10 +191,8 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 // FUNCTION: addUser
 // --------------------------------------------------------------------------
 export const addUser = functions.https.onCall(async (data, context) => {
-  const { email, password } = data;
-  console.log("Email: " + email)
-  console.log("Password: " + password)
-  console.log("Auth uid: " + context.auth?.uid)
+  const { email, password, licenseCode } = data;
+  
   if (!(context.auth && context.auth.uid)) {
     return {
       success: false,
@@ -211,6 +218,15 @@ export const addUser = functions.https.onCall(async (data, context) => {
       };
     }
     const userRecord = await admin.auth().createUser({ email, password });
+
+    if (licenseCode) {
+      const licenseDocRef = db.collection('Licenses').doc(licenseCode)
+      await licenseDocRef.update({
+        countUsers: admin.firestore.FieldValue.increment(1)
+      })
+      console.log("License " + licenseCode + " countUsers incremented.")
+    }
+    
     return {
       success: true,
       message: "Successfully created new user.",
