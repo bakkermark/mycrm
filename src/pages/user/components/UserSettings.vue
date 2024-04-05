@@ -5,6 +5,7 @@ import {doc, setDoc, getDoc} from 'firebase/firestore';
 import {ref as fbRef, getDownloadURL, uploadBytes, deleteObject, getStorage} from '@firebase/storage';
 import {functions, projectFirestore, projectStorage} from '@/firebase/config';
 import getLicenses from "../../../composables/license/getLicenses";
+import getCountries from "../../../composables/country/getCountries";
 import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
@@ -13,14 +14,15 @@ import { v4 as uuidv4 } from 'uuid';
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import {License} from "@/types/licenseType";
 import {ApiResponse} from "@/types/apiResponseType";
-import { collection, updateDoc, increment } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import {useRoute} from "vue-router";
 import {User} from "@/pages/user/userTypes";
 
 const isEditing = ref(false);
 const emit = defineEmits(['userUpdated']);
 const {t} = useI18n();
-const {licenses, load} = getLicenses();
+const {licenses, load: loadLicenses} = getLicenses();
+const {countries, load: loadCountries} = getCountries();
 const refForm = ref<VForm | null>(null);
 const roles = ['Admin', 'Standard User']
 const licenseHolders = ref<string[]>([]);
@@ -36,6 +38,9 @@ const userForm = reactive({
   infix: '',
   lastName: '',
   email: '',
+  mobile: '',
+  phone: '',
+  selectedCountry: '',
   selectedLicenseHolder: '',
   selectedRole: '',
   avatar: ''
@@ -44,8 +49,10 @@ let oldAvatarUrl = '';
 let oldEmail = '';
 
 onMounted(async () => {
-  await load(); // getLicenses
+  await loadLicenses();
   licenseHolders.value = licenses.value.map(license => `${license.company} (${license.id})`);
+  await loadCountries();
+  
   
   // Check if there is a query parameter id in the url.
   userId.value = route.query.id as string | null;
@@ -64,6 +71,9 @@ onMounted(async () => {
         userForm.lastName = userData.lastName;
         userForm.email = userData.email;
         oldEmail = userData.email;
+        userForm.mobile = userData.mobile;
+        userForm.phone = userData.phone;
+        userForm.selectedCountry = userData.country;
         userForm.selectedRole = userData.role;
         userForm.selectedLicenseHolder = userData.company + " (" + userData.licenseCode + ")";
         if (userData.avatar != null) {
@@ -208,6 +218,9 @@ const handleSubmit = async () => {
         lastName: userForm.lastName,
         fullName: [userForm.firstName, userForm.infix, userForm.lastName].filter(Boolean).join(" "),
         email: userForm.email,
+        mobile: userForm.mobile,
+        phone: userForm.phone,
+        country: userForm.selectedCountry,
         status: "Active",
         role: userForm.selectedRole,
         company: companyName,
@@ -293,6 +306,18 @@ const handleSubmit = async () => {
           <VCol cols="12" md="12">
             <AppTextField v-model="userForm.email" label="Email" placeholder="Type in email address ..."
                           :rules="[requiredValidator, emailValidator]"/>
+          </VCol>
+          <VCol cols="12" md="6">
+            <AppTextField v-model="userForm.mobile" label="Mobile" placeholder="Type in mobile number ..."/>
+          </VCol>
+          <VCol cols="12" md="6">
+            <AppTextField v-model="userForm.phone" label="Phone" placeholder="Type in phone number ..."/>
+          </VCol>
+          <VCol cols="12" md="6">
+            <AppSelect v-model="userForm.selectedCountry" :items="countries"
+                       placeholder="Select a country ..." label="Country" name="selectCountry"
+                       require/>
+
           </VCol>
           <VCol cols="12" md="6">
             <AppSelect v-model="userForm.selectedLicenseHolder" :items="licenseHolders" :rules="[requiredValidator]"

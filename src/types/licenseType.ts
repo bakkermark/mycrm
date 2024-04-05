@@ -4,6 +4,7 @@ export interface License {
   company: string;
   copyright?: string;
   country?: string;
+  countUsers: number;
   email: string;
   emailSignature?: string;
   firstName: string;

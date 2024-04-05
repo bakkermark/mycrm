@@ -167,7 +167,6 @@ watchEffect(async () => {
     return;
   } else {
     isEditing.value = true;
-
     try {
       const licenseDocRef = doc(projectFirestore, firebaseCollectionName, String(licenseId.value));
       const licenseDocSnap = await getDoc(licenseDocRef);
@@ -207,6 +206,8 @@ watchEffect(async () => {
         }
         licenseForm.plan = licenseData.plan;
         licenseForm.subscriptionStatus = licenseData.subscriptionStatus;
+        licenseForm.countUsers = licenseData.countUsers;
+        
         // Update the license id so other tabs come available in user/index.vue
         emit('licenseUpdated', licenseId);
       } else {

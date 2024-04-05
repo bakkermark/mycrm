@@ -42,7 +42,7 @@ const recentDevicesHeaders = [
   },
   {
     title: 'RECENT ACTIVITY',
-    key: 'createdAt',
+    key: 'createdAtFormatted',
   },
 ]
 
