@@ -144,7 +144,7 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
       })
       console.log("License " + userLicenseCode + " countUsers decremented.")
     }
-    
+
     await admin.auth().deleteUser(uid)
     console.log("User " + userData.fullName + " deleted from FB Auth.")
     await db.collection('Users').doc(uid).delete()
@@ -192,7 +192,7 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
 // --------------------------------------------------------------------------
 export const addUser = functions.https.onCall(async (data, context) => {
   const { email, password, licenseCode } = data;
-  
+
   if (!(context.auth && context.auth.uid)) {
     return {
       success: false,
@@ -226,7 +226,7 @@ export const addUser = functions.https.onCall(async (data, context) => {
       })
       console.log("License " + licenseCode + " countUsers incremented.")
     }
-    
+
     return {
       success: true,
       message: "Successfully created new user.",
@@ -451,7 +451,7 @@ exports.updateUserEmail = functions.https.onCall(async (data, context) => {
     console.log("Start updating email ...")
     await admin.auth().updateUser(data.uid, {email: data.email});
     console.log("User email has been updated.")
-    
+
     // Return a success message.
     console.log("User email updated succesfully. ")
     return { success: true, message: 'User email updated successfully.', };
@@ -459,4 +459,58 @@ exports.updateUserEmail = functions.https.onCall(async (data, context) => {
     console.error('Error updating user email:', error);
     return { success: false, message: 'Error updating user email. Details: ' + error };
   }
+});
+
+// --------------------------------------------------------------------------
+// FUNCTION: generateHtmlThumbnail
+// --------------------------------------------------------------------------
+const {Storage} = require('@google-cloud/storage');
+const puppeteer = require('puppeteer-core');
+const chrome = require('chrome-aws-lambda');
+
+const storage = new Storage();
+exports.generateHtmlThumbnail = functions
+  .runWith({ memory: '1GB' }) // Increase memory allocation here
+  .firestore
+  .document('/EmailTemplates/{docId}')
+  .onWrite(async (change, context) => {
+    // Prepare Puppeteer
+    const browser = await puppeteer.launch({
+      args: chrome.args,
+      executablePath: await chrome.executablePath,
+      headless: chrome.headless,
+    });
+
+    console.log("Write action triggered.")
+    const page = await browser.newPage();
+    console.log("Puppeteer browser opened with new page.")
+    const htmlContent = change.after.data()?.htmlTemplate;
+    await page.setContent(htmlContent, {waitUntil: 'networkidle0'});
+    const screenshotBuffer = await page.screenshot({type: 'jpeg'});
+    await browser.close();
+    console.log("Puppeteer browser closed.")
+
+    // Define where to store the screenshot in Cloud Storage
+    const bucketName = 'dev-mycrm.appspot.com';
+    const fileName = `thumbnails/${context.params.docId}.jpg`;
+    const file = storage.bucket(bucketName).file(fileName);
+
+    console.log("Preparing thumbnail save file ...")
+    // Save the screenshot
+    await file.save(screenshotBuffer, {
+      metadata: {contentType: 'image/jpeg'},
+    });
+    console.log("Thumbnail saved.")
+
+    // Update Firestore document with the URL of the thumbnail (optional)
+    const thumbnailUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
+    await change.after.ref.set({ htmlThumbnail: thumbnailUrl }, { merge: true });
+    console.log("Data saved in field htlThumbnail.")
+  });
+
+// --------------------------------------------------------------------------
+// FUNCTION: helloWorld
+// --------------------------------------------------------------------------
+exports.helloWorld = functions.https.onRequest((req, res) => {
+  res.send('Hello world!');
 });
