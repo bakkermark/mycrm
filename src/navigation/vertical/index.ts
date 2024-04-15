@@ -28,4 +28,12 @@ export default [
       { title: 'Add', to: 'relation-add' },
     ]
   },
+  {
+    title: 'Emailtemplates',
+    icon: { icon: 'tabler-template'},
+    children: [
+      { title: 'List', to: 'emailtemplate-list' },
+      { title: 'Add', to: 'emailtemplate-add' },
+    ]
+  },
 ]
