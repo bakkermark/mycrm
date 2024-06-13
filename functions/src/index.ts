@@ -464,49 +464,70 @@ exports.updateUserEmail = functions.https.onCall(async (data, context) => {
 // --------------------------------------------------------------------------
 // FUNCTION: generateHtmlThumbnail
 // --------------------------------------------------------------------------
-const {Storage} = require('@google-cloud/storage');
 const puppeteer = require('puppeteer-core');
 const chrome = require('chrome-aws-lambda');
+import { v4 as uuidv4 } from 'uuid';
 
-const storage = new Storage();
 exports.generateHtmlThumbnail = functions
-  .runWith({ memory: '1GB' }) // Increase memory allocation here
+  .runWith({ memory: '1GB' }) // Adjust memory allocation as needed
   .firestore
   .document('/EmailTemplates/{docId}')
-  .onWrite(async (change, context) => {
-    // Prepare Puppeteer
+  .onWrite(async (change, context): Promise<void> => {
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
+
+    // Only proceed if htmlTemplate has changed
+    if (beforeData && afterData && beforeData.htmlTemplate === afterData.htmlTemplate) {
+      console.log("No change in htmlTemplate. Exiting function.");
+      return; // Return early if htmlTemplate hasn't changed
+    }
+
+    // Start Puppeteer browser
     const browser = await puppeteer.launch({
       args: chrome.args,
       executablePath: await chrome.executablePath,
       headless: chrome.headless,
     });
 
-    console.log("Write action triggered.")
+    console.log("Write action triggered, htmlTemplate has changed.");
     const page = await browser.newPage();
-    console.log("Puppeteer browser opened with new page.")
-    const htmlContent = change.after.data()?.htmlTemplate;
-    await page.setContent(htmlContent, {waitUntil: 'networkidle0'});
-    const screenshotBuffer = await page.screenshot({type: 'jpeg'});
+    if (!afterData) {
+      console.log("Document data is undefined.");
+      await browser.close();
+      return;
+    }
+    const htmlContent = afterData.htmlTemplate;
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    const screenshotBuffer = await page.screenshot({ type: 'jpeg' });
     await browser.close();
-    console.log("Puppeteer browser closed.")
 
-    // Define where to store the screenshot in Cloud Storage
-    const bucketName = 'dev-mycrm.appspot.com';
+    // Access the Firebase Admin SDK bucket
+    const bucket = admin.storage().bucket('dev-mycrm.appspot.com');
     const fileName = `thumbnails/${context.params.docId}.jpg`;
-    const file = storage.bucket(bucketName).file(fileName);
+    const file = bucket.file(fileName);
 
-    console.log("Preparing thumbnail save file ...")
-    // Save the screenshot
+    // Generate a unique token for image access
+    const token = uuidv4();
+
+    // Save the screenshot with Firebase Admin SDK
     await file.save(screenshotBuffer, {
-      metadata: {contentType: 'image/jpeg'},
+      metadata: {
+        contentType: 'image/jpeg',
+        metadata: {
+          firebaseStorageDownloadTokens: token,
+        },
+      },
     });
-    console.log("Thumbnail saved.")
 
-    // Update Firestore document with the URL of the thumbnail (optional)
-    const thumbnailUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
+    // Compose URL with token for authenticated access
+    const thumbnailUrl = `https://firebasestorage.googleapis.com/v0/b/dev-mycrm.appspot.com/o/${encodeURIComponent(fileName)}?alt=media&token=${token}`;
+
+    // Update Firestore document with the URL of the thumbnail
     await change.after.ref.set({ htmlThumbnail: thumbnailUrl }, { merge: true });
-    console.log("Data saved in field htlThumbnail.")
+
+    console.log("Data saved in field htmlThumbnail.");
   });
+
 
 // --------------------------------------------------------------------------
 // FUNCTION: helloWorld

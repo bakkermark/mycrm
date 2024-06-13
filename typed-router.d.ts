@@ -41,7 +41,6 @@ declare module 'vue-router/auto/routes' {
   export interface RouteNamedMap {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
-    'contact-addedit': RouteRecordInfo<'contact-addedit', '/contact/addedit', Record<never, never>, Record<never, never>>,
     'emailtemplate-add': RouteRecordInfo<'emailtemplate-add', '/emailtemplate/add', Record<never, never>, Record<never, never>>,
     'emailtemplate-components-email-template-settings': RouteRecordInfo<'emailtemplate-components-email-template-settings', '/emailtemplate/components/EmailTemplateSettings', Record<never, never>, Record<never, never>>,
     'emailtemplate-list': RouteRecordInfo<'emailtemplate-list', '/emailtemplate/list', Record<never, never>, Record<never, never>>,
@@ -54,6 +53,9 @@ declare module 'vue-router/auto/routes' {
     'relation-add': RouteRecordInfo<'relation-add', '/relation/add', Record<never, never>, Record<never, never>>,
     'relation-details-id': RouteRecordInfo<'relation-details-id', '/relation/details/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'relation-list': RouteRecordInfo<'relation-list', '/relation/list', Record<never, never>, Record<never, never>>,
+    'trivia-question-add': RouteRecordInfo<'trivia-question-add', '/triviaQuestion/add', Record<never, never>, Record<never, never>>,
+    'trivia-question-components-trivia-question-add': RouteRecordInfo<'trivia-question-components-trivia-question-add', '/triviaQuestion/components/triviaQuestionAdd', Record<never, never>, Record<never, never>>,
+    'trivia-question-list': RouteRecordInfo<'trivia-question-list', '/triviaQuestion/list', Record<never, never>, Record<never, never>>,
     'user-add': RouteRecordInfo<'user-add', '/user/add', Record<never, never>, Record<never, never>>,
     'user-components-user-logins': RouteRecordInfo<'user-components-user-logins', '/user/components/UserLogins', Record<never, never>, Record<never, never>>,
     'user-components-user-settings': RouteRecordInfo<'user-components-user-settings', '/user/components/UserSettings', Record<never, never>, Record<never, never>>,

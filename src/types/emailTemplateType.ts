@@ -1,6 +1,7 @@
 export interface EmailTemplate {
   subject: string;
   htmlTemplate: string;
+  htmlThumbnail: string;
   createdAt: Date;
   description: string;
   licenseCode: string;

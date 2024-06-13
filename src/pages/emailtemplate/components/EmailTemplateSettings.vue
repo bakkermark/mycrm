@@ -70,7 +70,7 @@ import {useI18n} from 'vue-i18n';
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import {useRoute} from "vue-router";
 import AppTextarea from "@/@core/components/app-form-elements/AppTextarea.vue";
-import {EmailTemplate} from "@/types/emailTemplateType";
+import {TriviaQuestion} from "@/types/emailTemplateType";
 import {da} from "vuetify/locale";
 
 const isEditing = ref(false);
@@ -86,7 +86,7 @@ const emailtTemplateId = ref<string | null>(null);
 const emailTemplateForm = reactive({
   createdAt: new Date(),
   createdBy: '',
-  updatedAt: '',
+  updatedAt: new Date(),
   updatedBy: '',
   description: '',
   templateGroup: '',
@@ -105,7 +105,7 @@ const emailTemplateForm = reactive({
 const resetForm = () => {
   emailTemplateForm.createdAt = new Date();
   emailTemplateForm.createdBy = '';
-  emailTemplateForm.updatedAt = '';
+  emailTemplateForm.updatedAt = new Date();
   emailTemplateForm.updatedBy = '';
   emailTemplateForm.description = '';
   emailTemplateForm.templateGroup = '';
@@ -133,10 +133,27 @@ watchEffect(async () => {
     isEditing.value = true;
     try {
       const emailTemplateDocRef = doc(projectFirestore, firebaseCollectionName, String(emailtTemplateId.value));
+      console.log("Emailtemplate data wordt opgehaald ... ")
       const emailTemplateDocSnap = await getDoc(emailTemplateDocRef);
+      console.log("Emailtemplate data opgehaald.")
       if (emailTemplateDocSnap.exists()) {
-        const emailTemplateData = emailTemplateDocSnap.data() as EmailTemplate;
+        const emailTemplateData = emailTemplateDocSnap.data() as TriviaQuestion;
         emailTemplateForm.createdAt = emailTemplateData.createdAt;
+        emailTemplateForm.createdBy = emailTemplateData.createdBy;
+        emailTemplateForm.updatedAt = emailTemplateData.updatedAt;
+        emailTemplateForm.updatedBy = emailTemplateData.updatedBy;
+        emailTemplateForm.description = emailTemplateData.description;
+        emailTemplateForm.templateGroup = emailTemplateData.templateGroup;
+        emailTemplateForm.templateName = emailTemplateData.templateName;
+        emailTemplateForm.subject = emailTemplateData.subject;
+        emailTemplateForm.fromEmail = emailTemplateData.fromEmail;
+        emailTemplateForm.fromEmailName = emailTemplateData.fromEmailName;
+        emailTemplateForm.replyEmail = emailTemplateData.replyEmail;
+        emailTemplateForm.replyEmailName = emailTemplateData.replyEmail;
+        emailTemplateForm.htmlTemplate = emailTemplateData.htmlTemplate;
+        emailTemplateForm.htmlThumbNail = emailTemplateData.htmlThumbnail;
+        emailTemplateForm.licenseCode = emailTemplateData.licenseCode;
+        emailTemplateForm.templateType = emailTemplateData.templateType;
 
         // Update the license id so other tabs come available in user/index.vue
         emit('emailTemplateUpdated', emailtTemplateId);

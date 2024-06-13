@@ -2,7 +2,7 @@
   <div>
     <VCard
       class="mb-6"
-      title="Kick start your project 🚀"
+      title="Lets start building a Trivia Game 🚀"
     >
       <VCardText>All the best for your new project.</VCardText>
       <VCardText>

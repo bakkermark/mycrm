@@ -1,23 +1,26 @@
 <script lang="ts" setup>
-import {ref, computed, onMounted, watch } from 'vue';
+import {computed, onMounted, ref, watch} from 'vue';
 import {VDataTableServer} from 'vuetify/labs/VDataTable'
 import {paginationMeta} from '@/plugins/fake-api/utils/paginationMeta'
-import {getFunctions, httpsCallable} from 'firebase/functions';
+import {getFunctions} from 'firebase/functions';
 import {useI18n} from 'vue-i18n';
 import {useSnackbarStore} from "@/plugins/pinia/snackbarStore";
 import AppSelect from "@/@core/components/app-form-elements/AppSelect.vue";
 import AppTextField from "@/@core/components/app-form-elements/AppTextField.vue";
-import {TriviaQuestion} from "@/types/emailTemplateType";
-import getEmailTemplates from '../../../composables/emailTemplate/getEmailTemplates';
+import {TriviaQuestion} from "@/types/triviaQuestionType";
+import getTriviaQuestions from '../../../composables/triviaQuestions/getTriviaQuestions';
+import "firebase/firestore";
+import { doc, deleteDoc } from "firebase/firestore";
+import { projectFirestore } from "@/firebase/config";
 
 const { t } = useI18n();
 const isLoading = ref(true)
 const snackbar = useSnackbarStore();
 
 // 👉 Store
-const selectedSubscriptionStatus = ref()
-const selectedPlan = ref()
-const selectedStatus = ref()
+const selectedCategory = ref()
+const selectedLevel = ref()
+const selectedMedia = ref()
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -41,28 +44,32 @@ const updateOptions = (options: Options) => {
 // Headers
 const headers = [
   {
-    title: 'Thumnail',
-    key: 'htmlThumbnail',
+    title: 'Type',
+    key: 'QuestionMediaType',
   },
   {
-    title: 'Name',
-    key: 'templateName',
+    title: 'Media',
+    key: 'QuestionMediaUrl',
   },
   {
-    title: 'Group',
-    key: 'templateGroup',
+    title: 'Category',
+    key: 'Category',
   },
   {
-    title: 'Description',
-    key: 'description',
+    title: 'Question',
+    key: 'QuestionText',
   },
   {
-    title: 'Created By',
-    key: 'createdBy',
+    title: 'Level',
+    key: 'Level',
   },
   {
-    title: 'Created at',
-    key: 'createdAt',
+    title: 'Points',
+    key: 'Points',
+  },
+  {
+    title: 'Last changed',
+    key: 'ChangeDateTime',
   },
   {
     title: 'Actions',
@@ -76,91 +83,71 @@ const snackbarColor = ref('success');
 const isSnackbarVisible = ref(false);
 const snackbarMessage = ref('');
 
-// Interface for the cloud function response
-// TODO SHould this not be centralized?
-interface cloudFunctionResponse {
-  success: boolean;
-  message: string;
-  returnValue: string;
-}
-
 const functions = getFunctions();
 
-const emailTemplatesData = ref<TriviaQuestion[]>([]);
+const listData = ref<TriviaQuestion[]>([]);
 // Instantiate your composable
-const getEmailTemplatesFunction = getEmailTemplates();
+const getFunction = getTriviaQuestions();
 
 onMounted(async () => {
-  await getEmailTemplatesFunction.load();
+  await getFunction.load();
 
-  if (getEmailTemplatesFunction.error.value) {
-    console.log('Error getting emailTemplates: ', getEmailTemplatesFunction.error.value);
+  if (getFunction.error.value) {
+    console.log('Error getting TriviaQuestions: ', getFunction.error.value);
   } else {
-    emailTemplatesData.value = getEmailTemplatesFunction.emailTemplates.value?.map((emailTemplatesData: any) => {
+    listData.value = getFunction.triviaQuestions.value?.map((listData: any) => {
       return {
-        ...emailTemplatesData,
-        // Provide default values for required fields in case they don't exist in `emailTemplatesData`
-        subject: emailTemplatesData.subject || '',
-        htmlTemplate: emailTemplatesData.htmlTemplate || '',
-        createdAt: emailTemplatesData.createdAt || '',
-        description: emailTemplatesData.description || '',
-        licenseCode: emailTemplatesData.licenseCode || '',
-        templateGroup: emailTemplatesData.templateGroup || '',
-        templateName: emailTemplatesData.templateName || '',
-        updatedAt: emailTemplatesData.updatedAt || '',
-        templateType: emailTemplatesData.templateType || '',
-        createdBy: emailTemplatesData.createdBy || '',
-        updatedBy: emailTemplatesData.updatedBy || '',
-        lastEmailSent: emailTemplatesData.lastEmailSent || '',
-        fromEmail: emailTemplatesData.fromEmail || '',
-        fromEmailName: emailTemplatesData.fromEmailName || '',
-        replyEmail: emailTemplatesData.replyEmail || '',
-        replyEmailName: emailTemplatesData.replyEmailName || '',
+        ...listData,
+        // Provide default values for required fields in case they don't exist in `listData`
+        id: listData.id || '',
+        QuestionText: listData.QuestionText || ''
 
-      } as TriviaQuestion; // Type cast the resulting object as 'EmailTemplate'
-    }) || []; // Provide default empty array in case `emailTemplates.value` is undefined
+      } as TriviaQuestion;
+    }) || [];
   }
   isLoading.value = false;
 });
 
 const searchQuery = ref('') // this will track the value of the search input
-const filteredEmailTemplates = computed(() => {
-  let filtered = emailTemplatesData.value;
-  if (searchQuery.value || selectedSubscriptionStatus.value || selectedPlan.value || selectedStatus.value) {
-    filtered = emailTemplatesData.value.filter(emailTemplate =>
-      (emailTemplate.templateName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        emailTemplate.templateGroup.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        emailTemplate.description.toLowerCase().includes(searchQuery.value.toLowerCase())) 
-      //&&
-      //(!selectedSubscriptionStatus.value || license.subscriptionStatus === selectedSubscriptionStatus.value) &&
-      //(!selectedPlan.value || license.plan === selectedPlan.value) &&
-      //(!selectedStatus.value || license.status === selectedStatus.value)
+const filteredListData = computed(() => {
+  let filtered = listData.value;
+  if (searchQuery.value || selectedCategory.value || selectedLevel.value || selectedMedia.value) {
+    filtered = listData.value.filter(triviaQuestion =>
+      (triviaQuestion.QuestionText.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        triviaQuestion.QuestionClarification.toLowerCase().includes(searchQuery.value.toLowerCase())) &&
+      (!selectedCategory.value || triviaQuestion.Category === selectedCategory.value) &&
+      (!selectedLevel.value || triviaQuestion.Level === selectedLevel.value) &&
+      (!selectedMedia.value || triviaQuestion.QuestionMediaType === selectedMedia.value)
     );
   }
 
   // Consider the pagination
   const startIndex = (page.value - 1) * itemsPerPage.value;
   const endIndex = startIndex + itemsPerPage.value;
-  const pagedFilteredEmailTemplates = filtered.slice(startIndex, endIndex);
-
-  return pagedFilteredEmailTemplates;
+  return filtered.slice(startIndex, endIndex);
 });
 
-const totalEmailTemplates = computed(() => emailTemplatesData.value.length);
+const totalListData = computed(() => listData.value.length);
 
 interface FirebaseTimestamp {
   seconds: number;
   nanoseconds: number;
 }
+
+const navigateToFirebaseDB = (collection: string, docId: string) => {
+  const url = `https://console.firebase.google.com/u/0/project/dev-trivia-9f984/firestore/databases/-default-/data/~2F${collection}~2F${docId}`;
+  window.open(url, '_blank');
+};
+
 const formatTimestamp = (timestamp: FirebaseTimestamp) => {
   if (!timestamp) return '';
   const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
   return `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
-const trimDescription = (description: string) => {
+const trimString = (description: string, length: number) => {
   if (!description) return '';
-  return description.length > 40 ? `${description.substring(0, 40)}...` : description;
+  return description.length > length ? `${description.substring(0, length)}...` : description;
 }
 
 // 👉 Hover thumbnail
@@ -177,133 +164,117 @@ const handleMouseOut = () => {
 };
 
 // 👉 search filters
-const subscriptionStatus = [
+const categories = [
   {
-    title: 'Active',
-    value: 'Active',
-  }
+    title: 'Sport',
+    value: 'Sport',
+  },
+  {
+    title: 'Geschiedenis',
+    value: 'Geschiedenis',
+  },
+  {
+    title: 'Geografie',
+    value: 'Geografie',
+  },
 ]
 
-const plans = [
+const levels = [
   {
-    title: 'Basic',
-    value: 'Basic',
-  }
+    title: 'Beginner',
+    value: 'Beginner',
+  },
+  {
+    title: 'Intermediate',
+    value: 'Intermediate',
+  },
+  {
+    title: 'Advanced',
+    value: 'Advanced',
+  },
+  
 ]
 
-const status = [
+const media = [
   {
-    title: 'Active',
-    value: 'Active',
-  }
+    title: 'Image',
+    value: 'Image',
+  },
+  {
+    title: 'Video',
+    value: 'Video',
+  },
+  {
+    title: 'YouTube',
+    value: 'YouTube',
+  },
 ]
 
-const deleteEmailTemplate = async (id: string) => {
-  const emailTemplate = emailTemplatesData.value.find(emailTemplateId => emailTemplate.id === id);
-  if (!emailTemplate) {
-    snackbar.showSnackbar({ color: "error", message: t("No emailtemplate found with this id. Please contact support desk.") })
-    return;
+const resolveMediaIcon = (mediaType:string) => {
+  const mediaTypeLowerCase = mediaType.toLowerCase()
+  if (mediaTypeLowerCase === 'image')
+    return {
+      color: 'warning',
+      icon: 'tabler-photo',
+    }
+  if (mediaTypeLowerCase === 'video')
+    return {
+      color: 'error',
+      icon: 'tabler-movie',
+    }
+  if (mediaTypeLowerCase === 'youtube')
+    return {
+      color: 'primary',
+      icon: 'tabler-brand-youtube',
+    }
+
+  return {
+    color: 'secondary',
+    icon: 'tabler-photo',
   }
-  else {
-    snackbar.showSnackbar({ color: "success", message: t("Emailtemplate succesfully deleted.") })
-    return;
+}
+
+const deleteRowItem = async (id: string) => {
+  const triviaQuestion = listData.value.find((question) => question.id === id);
+  if (!triviaQuestion) {
+    console.log("No id found.")
+    snackbar.showSnackbar({
+      color: "error",
+      message: t("No record found with this id. Please contact support.")
+    })
+  } else {
+    try {
+      console.log("Trying to delete record.")
+      // Delete document in Firestore
+      const docRef = doc(projectFirestore, "TriviaQuestions_nl", id);
+      await deleteDoc(docRef);
+      console.log("Record delete in FB.")
+
+      // Remove data from local state
+      listData.value = listData.value.filter(question => question.id !== id);
+      console.log("Record delete in local table.")
+
+      snackbar.showSnackbar({color: "success", message: t("Record successfully deleted.")});
+    } catch (error) {
+      console.log(error);
+      snackbar.showSnackbar({color: "error", message: t("Failed to delete the record.")});
+    }
   }
-};
+}
 
 const router = useRouter();
-const navigateToAddEmailTemplate = () => {
-  router.push({ name: 'emailtemplate-add' });
+const navigateToAdd = () => {
+  router.push({ name: 'trivia-question-add' });
 };
 
 const navigateToEditLicense = (id: string) => {
-  router.push({ path: '/emailtemplate/add', query: { id: id } });
+  router.push({ path: '/triviaquestion/add', query: { id: id } });
 };
 
-const widgetData = ref([
-  {
-    title: 'Session',
-    value: '21,459',
-    change: 29,
-    desc: 'Total Users',
-    icon: 'tabler-user',
-    iconColor: 'primary',
-  },
-  {
-    title: 'Paid Users',
-    value: '4,567',
-    change: 18,
-    desc: 'Last Week Analytics',
-    icon: 'tabler-user-plus',
-    iconColor: 'error',
-  },
-  {
-    title: 'Active Users',
-    value: '19,860',
-    change: -14,
-    desc: 'Last Week Analytics',
-    icon: 'tabler-user-check',
-    iconColor: 'success',
-  },
-  {
-    title: 'Pending Users',
-    value: '237',
-    change: 42,
-    desc: 'Last Week Analytics',
-    icon: 'tabler-user-exclamation',
-    iconColor: 'warning',
-  },
-])
 </script>
 
 <template>
   <section>
-    <!-- 👉 Widgets -->
-    <div class="d-flex mb-6">
-      <VRow>
-        <template
-          v-for="(data, id) in widgetData"
-          :key="id"
-        >
-          <VCol
-            cols="12"
-            md="3"
-            sm="6"
-          >
-            <VCard>
-              <VCardText>
-                <div class="d-flex justify-space-between">
-                  <div class="d-flex flex-column gap-y-1">
-                    <span class="text-body-1 text-medium-emphasis">{{ data.title }}</span>
-                    <div>
-                      <h4 class="text-h4">
-                        {{ data.value }}
-                        <span
-                          class="text-base "
-                          :class="data.change > 0 ? 'text-success' : 'text-error'"
-                        >({{ prefixWithPlus(data.change) }}%)</span>
-                      </h4>
-                    </div>
-                    <span class="text-sm">{{ data.desc }}</span>
-                  </div>
-                  <VAvatar
-                    :color="data.iconColor"
-                    variant="tonal"
-                    rounded
-                    size="38"
-                  >
-                    <VIcon
-                      :icon="data.icon"
-                      size="26"
-                    />
-                  </VAvatar>
-                </div>
-              </VCardText>
-            </VCard>
-          </VCol>
-        </template>
-      </VRow>
-    </div>
-
     <VCard
       title="Filters"
       class="mb-6"
@@ -316,10 +287,10 @@ const widgetData = ref([
             sm="4"
           >
             <AppSelect
-              v-model="selectedSubscriptionStatus"
-              label="Select subscription status"
-              placeholder="Select subscription status"
-              :items="subscriptionStatus"
+              v-model="selectedCategory"
+              label="Select category"
+              placeholder="Select category"
+              :items="categories"
               clearable
               clear-icon="tabler-x"
             />
@@ -330,10 +301,10 @@ const widgetData = ref([
             sm="4"
           >
             <AppSelect
-              v-model="selectedPlan"
-              label="Select Plan"
-              placeholder="Select Plan"
-              :items="plans"
+              v-model="selectedLevel"
+              label="Select level"
+              placeholder="Select level"
+              :items="levels"
               clearable
               clear-icon="tabler-x"
             />
@@ -344,10 +315,10 @@ const widgetData = ref([
             sm="4"
           >
             <AppSelect
-              v-model="selectedStatus"
-              label="Select Status"
-              placeholder="Select Status"
-              :items="status"
+              v-model="selectedMedia"
+              label="Select media"
+              placeholder="Select media"
+              :items="media"
               clearable
               clear-icon="tabler-x"
             />
@@ -395,9 +366,9 @@ const widgetData = ref([
           <!-- 👉 Add user button -->
           <VBtn
             prepend-icon="tabler-plus"
-            @click="navigateToAddEmailTemplate"
+            @click="navigateToAdd"
           >
-            Add New Emailtemplate
+            Add New Question
           </VBtn>
         </div>
       </VCardText>
@@ -407,71 +378,75 @@ const widgetData = ref([
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
-        :items="filteredEmailTemplates"
-        :items-length="filteredEmailTemplates.length"
+        :items="filteredListData"
+        :items-length="filteredListData.length"
         :headers="headers"
         class="text-no-wrap"
         @update:options="updateOptions"
         v-model:loading="isLoading"
       >
 
-        <template #item.htmlThumbnail="{ item }">
+        <template #item.QuestionMediaUrl="{ item }">
           <div
             class="thumbnail-container"
-            @mouseover="handleMouseOver(item.htmlThumbnail)"
+            @mouseover="handleMouseOver(item.QuestionMediaUrl)"
             @mouseout="handleMouseOut"
           >
             <VImg
               class="thumbnail-padding"
-              v-if="item.htmlThumbnail && item.htmlThumbnail.startsWith('https://')"
-              :src="item.htmlThumbnail"
+              v-if="item.QuestionMediaUrl && item.QuestionMediaUrl.startsWith('https://')"
+              :src="item.QuestionMediaUrl"
             />
             <!-- Tooltip that displays when hovered -->
-            <div v-if="showTooltip && hoverImage === item.htmlThumbnail" class="tooltip">
+            <div v-if="showTooltip && hoverImage === item.QuestionMediaUrl" class="tooltip">
               <VImg :src="hoverImage" />
             </div>
           </div>
         </template>
 
+        <!-- 👉 QuestionMediaType -->
+        <template #item.QuestionMediaType="{ item }">
+          <div class="d-flex align-center gap-4">
+            <VAvatar
+              :size="30"
+              :color="resolveMediaIcon(item.QuestionMediaType).color"
+              variant="tonal"
+            >
+              <VIcon
+                :size="20"
+                :icon="resolveMediaIcon(item.QuestionMediaType).icon"
+              />
+            </VAvatar>
+            <VTooltip
+              location="top"
+              activator="parent"
+            >
+              {{ item.QuestionMediaType }}
+            </VTooltip>
+          </div>
+        </template>
+
         <!-- Description -->
-        <template #item.description="{ item }">
-          {{ trimDescription(item.description) }}
+        <template #item.QuestionText="{ item }">
+          {{ trimString(item.QuestionText, 60) }}
         </template>
 
         <!-- CreatedAt -->
-        <template #item.createdAt="{ item }">
-          {{ formatTimestamp(item.createdAt) }}
+        <template #item.ChangeDateTime="{ item }">
+          {{ formatTimestamp(item.ChangeDateTime) }}
         </template>
-        
+
         <!-- Actions -->
         <template #item.actions="{ item }">
           <IconBtn
-            :disabled="item.changeUserStatusLoading"
-            v-if="!item.changeUserStatusLoading">
-            <VTooltip
-              location="top"
-              activator="parent"
-            >
-            </VTooltip>
-          </IconBtn>
-          <IconBtn
-            v-else
-          >
-            <VProgressCircular
-              :size="20"
-              :width="2"
-              indeterminate
-            />
-          </IconBtn>
-          <IconBtn
             :disabled="item.deleteEmailTemplateLoading"
             v-if="!item.deleteEmailTemplateLoading"
-            @click="deleteEmailTemplate(item.id)">
+            @click="deleteRowItem(item.id)">
             <VTooltip
               location="top"
               activator="parent"
             >
-              Delete emailtemplate
+              Delete question
             </VTooltip>
             <VIcon icon="tabler-trash" />
           </IconBtn>
@@ -490,7 +465,7 @@ const widgetData = ref([
               location="top"
               activator="parent"
             >
-              Edit emailtemplate
+              Edit question
             </VTooltip>
             <VIcon icon="tabler-edit" />
           </IconBtn>
@@ -507,18 +482,23 @@ const widgetData = ref([
             />
             <VMenu activator="parent">
               <VList>
-
-                <VListItem link="">
+                <VListItem @click="navigateToFirebaseDB('TriviaQuestions_nl', item.id)">
                   <template #prepend>
-                    <VIcon icon="tabler-mail" />
+                    <VIcon icon="tabler-database-search" />
                   </template>
-                  <VListItemTitle>Send email</VListItemTitle>
+                  <VListItemTitle>Search Firebase</VListItemTitle>
                 </VListItem>
                 <VListItem link="">
                   <template #prepend>
-                    <VIcon icon="tabler-send" />
+                    <VIcon icon="tabler-message-language" />
                   </template>
-                  <VListItemTitle>Create campaign</VListItemTitle>
+                  <VListItemTitle>Translate question</VListItemTitle>
+                </VListItem>
+                <VListItem link="">
+                  <template #prepend>
+                    <VIcon icon="tabler-world-search" />
+                  </template>
+                  <VListItemTitle>Search media</VListItemTitle>
                 </VListItem>
               </VList>
             </VMenu>
@@ -530,13 +510,13 @@ const widgetData = ref([
           <VDivider />
           <div class="d-flex align-center justify-sm-space-between justify-center flex-wrap gap-3 pa-5 pt-3">
             <p class="text-sm text-disabled mb-0">
-              {{ paginationMeta({page, itemsPerPage}, totalEmailTemplates) }}
+              {{ paginationMeta({page, itemsPerPage}, totalListData) }}
             </p>
 
             <VPagination
               v-model="page"
-              :length="Math.ceil(totalEmailTemplates / itemsPerPage)"
-              :total-visible="$vuetify.display.xs ? 1 : Math.ceil(totalEmailTemplates / itemsPerPage)"
+              :length="Math.ceil(totalListData / itemsPerPage)"
+              :total-visible="$vuetify.display.xs ? 1 : Math.ceil(totalListData / itemsPerPage)"
             >
               <template #prev="slotProps">
                 <VBtn

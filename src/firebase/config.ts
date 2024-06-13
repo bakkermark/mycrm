@@ -6,13 +6,13 @@ import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBBuQ2YUp05ClALuSpg_8zxIEQCVyvC-tQ",
-  authDomain: "dev-mycrm.firebaseapp.com",
-  projectId: "dev-mycrm",
-  storageBucket: "dev-mycrm.appspot.com",
-  messagingSenderId: "935411313031",
-  appId: "1:935411313031:web:9c28fbd6e7e5e7fa300b22",
-  measurementId: "G-WT7D0J0JH9"
+  apiKey: "AIzaSyAFI8jfCr19xMwr8Hbpdj5VCGmiCCfAaZ4",
+  authDomain: "dev-trivia-9f984.firebaseapp.com",
+  projectId: "dev-trivia-9f984",
+  storageBucket: "dev-trivia-9f984.appspot.com",
+  messagingSenderId: "170568231111",
+  appId: "1:170568231111:web:4bf612017d9582d38af6e2",
+  measurementId: "G-375JLRYGZH"
 };
 
 // Initialize Firebase
