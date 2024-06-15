@@ -235,31 +235,30 @@ const resolveMediaIcon = (mediaType:string) => {
 }
 
 const deleteRowItem = async (id: string) => {
-  const triviaQuestion = listData.value.find((question) => question.id === id);
-  if (!triviaQuestion) {
-    console.log("No id found.")
-    snackbar.showSnackbar({
-      color: "error",
-      message: t("No record found with this id. Please contact support.")
-    })
-  } else {
-    try {
-      console.log("Trying to delete record.")
-      // Delete document in Firestore
-      const docRef = doc(projectFirestore, "TriviaQuestions_nl", id);
-      await deleteDoc(docRef);
-      console.log("Record delete in FB.")
+    const triviaQuestion = listData.value.find((question) => question.id === id);
+    if (!triviaQuestion) {
+      console.log("No id found.")
+      snackbar.showSnackbar({
+        color: "error",
+        message: t("No record found with this id. Please contact support.")
+      })
+    } else {
+      try {
+        console.log("Trying to delete record.")
+        // Delete document in Firestore
+        const docRef = doc(projectFirestore, "TriviaQuestions_nl", id);
+        await deleteDoc(docRef);
+        console.log("Record delete in FB.")
 
-      // Remove data from local state
-      listData.value = listData.value.filter(question => question.id !== id);
-      console.log("Record delete in local table.")
-
-      snackbar.showSnackbar({color: "success", message: t("Record successfully deleted.")});
-    } catch (error) {
-      console.log(error);
-      snackbar.showSnackbar({color: "error", message: t("Failed to delete the record.")});
-    }
-  }
+        // Remove data from local state
+        listData.value = listData.value.filter(question => question.id !== id);
+        
+        snackbar.showSnackbar({color: "success", message: t("Record successfully deleted.")});
+      } catch (error) {
+        console.log(error);
+        snackbar.showSnackbar({color: "error", message: t("Failed to delete the record.")});
+      }
+  };
 }
 
 const router = useRouter();

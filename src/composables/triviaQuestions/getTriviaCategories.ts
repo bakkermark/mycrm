@@ -12,27 +12,26 @@ interface Data {
 
 const getTriviaCategories = () => {
   const firebaseCollectionName = "TriviaCategories_nl";
-  const data: Ref<Data[]> = ref([]);
+  const triviaCategories: Ref<Data[]> = ref([]);
   const error: Ref<string | null> = ref(null);
 
   const load = async () => {
     try {
       const collectionReference = collection(projectFirestore, firebaseCollectionName);
-      const dataQuery = query(collectionReference, orderBy("Name"));
+      const dataQuery = query(collectionReference, orderBy("Sorting"));
       const dataSnapshots = await getDocs(dataQuery);
-      data.value = dataSnapshots.docs.map((doc: DocumentSnapshot<firebase.firestore.DocumentData>) => {
+      triviaCategories.value = dataSnapshots.docs.map((doc: DocumentSnapshot<firebase.firestore.DocumentData>) => {
         const docData = doc.data();
-        if (!docData) return { id: '', Name: '' } as Data;
-        return { ...docData, id: doc.id, Name: docData.Name } as Data;
+        if (!docData) return '';
+        return docData.Name;
       });
-      console.log("Loaded categories in api:", data.value); // Debugging line
     } catch (err) {
       error.value = (err as Error).message;
       console.log(`Error fetching data: ${error.value}`);
     }
   };
 
-  return { data, error, load };
+  return { triviaCategories, error, load };
 };
 
 export default getTriviaCategories;
